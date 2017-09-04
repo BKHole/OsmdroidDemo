@@ -13,9 +13,13 @@ public class PointOverlay extends Overlay {
 
     static PointOverlay pointOverlay = null;
 
-    public static synchronized PointOverlay getInstance() {
+    public static PointOverlay GetInstance() {
         if (pointOverlay == null) {
-            pointOverlay = new PointOverlay();
+            synchronized (PointOverlay.class) {
+                if (pointOverlay == null) {
+                    pointOverlay = new PointOverlay();
+                }
+            }
         }
         return pointOverlay;
     }
