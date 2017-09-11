@@ -8,6 +8,21 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <ImageView
+        android:id="@+id/btn_point_add"
+        android:layout_alignParentRight="true"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="20dp"
+        android:src="@drawable/add_captain_command"/>
+
+    <ImageView
+        android:id="@+id/btn_center"
+        android:layout_width="60dp"
+        android:layout_height="70dp"
+        android:layout_centerInParent="true"
+        android:src="@drawable/icon_plan_point" />
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -16,13 +31,13 @@
         android:layout_marginLeft="20dp"
         android:orientation="vertical">
 
-        <ImageButton
+        <ImageView
             android:id="@+id/btn_map_mode"
             android:layout_width="45dp"
             android:layout_height="45dp"
             android:src="@drawable/ic_menu_mapmode" />
 
-        <ImageButton
+        <ImageView
             android:id="@+id/btn_location"
             android:layout_width="45dp"
             android:layout_height="45dp"
@@ -39,13 +54,13 @@
         android:layout_marginRight="20dp"
         android:orientation="vertical">
 
-        <ImageButton
+        <ImageView
             android:id="@+id/btn_zoom_in"
             android:layout_width="45dp"
             android:layout_height="45dp"
             android:src="@drawable/zoom_in" />
 
-        <ImageButton
+        <ImageView
             android:id="@+id/btn_zoom_out"
             android:layout_width="45dp"
             android:layout_height="45dp"

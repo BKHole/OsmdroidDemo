@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -21,15 +22,21 @@ import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.bigemap.osmdroiddemo.TileSource.GoogleMapsTileSource;
 import com.bigemap.osmdroiddemo.TileSource.GoogleSatelliteTileSource;
 import com.bigemap.osmdroiddemo.constants.Constant;
+import com.bigemap.osmdroiddemo.utils.LocationUtils;
+import com.bigemap.osmdroiddemo.utils.PositionUtils;
 
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.Polygon;
+import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.ScaleBarOverlay;
 import org.osmdroid.views.overlay.compass.CompassOverlay;
 import org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider;
@@ -43,8 +50,9 @@ import java.util.List;
 import java.util.Map;
 
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, LocationListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
+    private static final String TAG = "MainActivity";
     public static final String GOOGLE_MAP = "Google Map";
     public static final String GOOGLE_SATELLITE = "Google卫星图";
     public static final String OSM = "OpenStreetMap";
@@ -57,12 +65,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //指南针方向
     private CompassOverlay mCompassOverlay = null;
     //设置导航图标的位置
-    private MyLocationNewOverlay mLocationOverlay;
     private LocationManager lm;
     private Location currentLocation = null;
     //设置自定义定位，缩小，放大
-    private ImageButton location, zoomIn, zoomOut, mapMode;
+    private ImageView location, zoomIn, zoomOut, mapMode, addPoint, centerPoint;
     private int selectedValue = 0;//默认选中地图值
+    private GeoPoint convertedPoint;
+    private List<GeoPoint> points;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,20 +81,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             checkPermissions();
         }
-//        Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(getApplicationContext()));
         setContentView(R.layout.activity_main);
-
         init();
     }
 
     private void init() {
         mapView = $(R.id.mapView);
+        points = new ArrayList<>();
         initView();
         initTileSource();
 
-        Log.d("MyTag", mapView.getTileProvider().getTileSource().name());
+        Log.d(TAG, mapView.getTileProvider().getTileSource().name());
         mapView.setDrawingCacheEnabled(true);
-//        mapView.setBuiltInZoomControls(true);//显示默认缩放控制按钮
         mapView.setTilesScaledToDpi(true);//图源比例转换屏幕像素
         mapView.setUseDataConnection(true);//使用网络数据
         mapView.getController().setZoom(15);
@@ -92,36 +100,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         //地图自由旋转
         mRotationGestureOverlay = new RotationGestureOverlay(mapView);
-        mRotationGestureOverlay.setEnabled(true);
         mapView.getOverlays().add(this.mRotationGestureOverlay);
         //比例尺
         final DisplayMetrics dm = getResources().getDisplayMetrics();
         mScaleBarOverlay = new ScaleBarOverlay(mapView);
-//        mScaleBarOverlay.setCentred(true);
         mScaleBarOverlay.setAlignRight(true);
         mScaleBarOverlay.setAlignBottom(true);
 //        mScaleBarOverlay.setScaleBarOffset(dm.widthPixels / 5, 35);
         mapView.getOverlays().add(mScaleBarOverlay);
-        //定位当前位置
-        Bitmap bMap = BitmapFactory.decodeResource(mapView.getContext().getResources(), R.drawable.marker_default);
-        GpsMyLocationProvider provider = new GpsMyLocationProvider(this);
-        provider.addLocationSource(LocationManager.NETWORK_PROVIDER);
-        mLocationOverlay = new MyLocationNewOverlay(provider, mapView);
-        mLocationOverlay.runOnFirstFix(new Runnable() {
-            @Override
-            public void run() {
-                Log.d("MyTag", String.format("First location fix: %s", mLocationOverlay.getLastFix()));
-            }
-        });
-        mLocationOverlay.setPersonIcon(bMap);
-        mapView.getOverlays().add(mLocationOverlay);
-        mLocationOverlay.enableMyLocation();//设置可视
 
         //显示指南针
         mCompassOverlay = new CompassOverlay(this, new InternalCompassOrientationProvider(this), mapView);
         mCompassOverlay.enableCompass();
         mapView.getOverlays().add(this.mCompassOverlay);
 
+        GeoPoint originPoint = getNetworkLocation();
+        if (originPoint !=null){
+            convertedPoint = PositionUtils.gps84_To_Gcj02(originPoint.getLatitude(), originPoint.getLongitude());
+            setPoint(convertedPoint);
+            Log.d(TAG, "onResume: convertedPoint lat="+convertedPoint.getLatitude()+", lng="+convertedPoint.getLongitude());
+            mapView.getController().setCenter(convertedPoint);
+        }else{
+            GeoPoint endPoint = new GeoPoint(30.334141, 104.31532);
+            setPoint(endPoint);
+            mapView.getController().setCenter(endPoint);
+        }
 //        final int zoomLevel = mPrefs.getInt(Constant.PREFS_ZOOM_LEVEL, mPrefs.getInt(Constant.PREFS_ZOOM_LEVEL, 1));
 //        mapView.getController().setZoom(zoomLevel);
 //        final float orientation = mPrefs.getFloat(Constant.PREFS_ORIENTATION, 0);
@@ -147,10 +150,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         zoomOut = $(R.id.btn_zoom_out);
         location = $(R.id.btn_location);
         mapMode = $(R.id.btn_map_mode);
+        centerPoint=$(R.id.btn_center);
+        addPoint=$(R.id.btn_point_add);
         location.setOnClickListener(this);
         zoomIn.setOnClickListener(this);
         zoomOut.setOnClickListener(this);
         mapMode.setOnClickListener(this);
+        addPoint.setOnClickListener(this);
     }
 
     private void initTileSource(){
@@ -162,6 +168,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         TileSourceFactory.addTileSource(satelliteTileSource);
 
         mapView.setTileSource(tileSource);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mCompassOverlay.enableCompass();
+        mScaleBarOverlay.enableScaleBar();
+    }
+
+    @Override
+    protected void onPause() {
+//        final SharedPreferences.Editor edit = mPrefs.edit();
+//        edit.putString(Constant.PREFS_TILE_SOURCE, mapView.getTileProvider().getTileSource().name());
+//        edit.putFloat(Constant.PREFS_ORIENTATION, mapView.getMapOrientation());
+//        edit.putString(Constant.PREFS_LATITUDE_STRING, String.valueOf(mapView.getMapCenter().getLatitude()));
+//        edit.putString(Constant.PREFS_LONGITUDE_STRING, String.valueOf(mapView.getMapCenter().getLongitude()));
+//        edit.putInt(Constant.PREFS_ZOOM_LEVEL, mapView.getZoomLevel());
+//        edit.putBoolean(Constant.PREFS_SHOW_LOCATION, mLocationOverlay.isMyLocationEnabled());
+//        edit.putBoolean(Constant.PREFS_SHOW_COMPASS, mCompassOverlay.isCompassEnabled());
+//        edit.commit();
+        super.onPause();
+        LocationUtils.unRegisterListener(this);//取消监听
+        mCompassOverlay.disableCompass();
+        mScaleBarOverlay.disableScaleBar();
+
     }
 
     // START PERMISSION CHECK
@@ -184,66 +215,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             ActivityCompat.requestPermissions(this, params, REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
         } // else: We already have permissions, so handle as normal
     }
-
-    @Override
-    protected void onPause() {
-//        final SharedPreferences.Editor edit = mPrefs.edit();
-//        edit.putString(Constant.PREFS_TILE_SOURCE, mapView.getTileProvider().getTileSource().name());
-//        edit.putFloat(Constant.PREFS_ORIENTATION, mapView.getMapOrientation());
-//        edit.putString(Constant.PREFS_LATITUDE_STRING, String.valueOf(mapView.getMapCenter().getLatitude()));
-//        edit.putString(Constant.PREFS_LONGITUDE_STRING, String.valueOf(mapView.getMapCenter().getLongitude()));
-//        edit.putInt(Constant.PREFS_ZOOM_LEVEL, mapView.getZoomLevel());
-//        edit.putBoolean(Constant.PREFS_SHOW_LOCATION, mLocationOverlay.isMyLocationEnabled());
-//        edit.putBoolean(Constant.PREFS_SHOW_COMPASS, mCompassOverlay.isCompassEnabled());
-//        edit.commit();
-        super.onPause();
-        try {
-            lm.removeUpdates(this);
-        } catch (Exception ex) {
-        }
-
-        mCompassOverlay.disableCompass();
-        mLocationOverlay.disableFollowLocation();
-        mLocationOverlay.disableMyLocation();
-        mScaleBarOverlay.disableScaleBar();
-
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-//        final String tileSourceName = mPrefs.getString(Constant.PREFS_TILE_SOURCE,
-//                TileSourceFactory.DEFAULT_TILE_SOURCE.name());
-//        try {
-//            final ITileSource tileSource = TileSourceFactory.getTileSource(tileSourceName);
-//            mapView.setTileSource(tileSource);
-//        } catch (final IllegalArgumentException e) {
-//            mapView.setTileSource(TileSourceFactory.DEFAULT_TILE_SOURCE);
-//        }
-//        if (mPrefs.getBoolean(Constant.PREFS_SHOW_LOCATION, false)) {
-//            this.mLocationOverlay.enableMyLocation();
-//        }
-//        if (mPrefs.getBoolean(Constant.PREFS_SHOW_COMPASS, false)) {
-//            if (mCompassOverlay!=null)
-//                //this call is needed because onPause, the orientation provider is destroyed to prevent context leaks
-//                this.mCompassOverlay.setOrientationProvider(new InternalCompassOrientationProvider(mapView.getContext()));
-//            this.mCompassOverlay.enableCompass();
-//        }
-        lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        try {
-            //this fails on AVD 19s, even with the appcompat check, says no provided named gps is available
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0l, 0f, this);
-                lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0l, 0f, this);
-            }
-        } catch (Exception ex) {
-        }
-        mLocationOverlay.enableFollowLocation();
-        mLocationOverlay.enableMyLocation();
-        mCompassOverlay.enableCompass();
-        mScaleBarOverlay.enableScaleBar();
-    }
-
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         switch (requestCode) {
@@ -282,34 +253,96 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return (T) findViewById(id);
     }
 
-    @Override
-    public void onLocationChanged(Location location) {
-        currentLocation = location;
+    /**
+     * 通过网络等获取定位信息
+     */
+    private GeoPoint getNetworkLocation() {
+        Location net = LocationUtils.getNetWorkLocation(this);
+        GeoPoint geoPoint=null;
+        if (net == null) {
+            Log.d(TAG, "net location is null");
+        } else {
+            geoPoint=new GeoPoint(net.getLatitude(), net.getLongitude());
+            Log.d(TAG, "network location: lat== "+net.getLatitude()+", lng=="+net.getLongitude());
+            Log.d(TAG, "provider=="+net.getProvider());
+        }
+        return geoPoint;
+    }
+    /**
+     * 点
+     * @param point
+     */
+    private void setPoint(GeoPoint point) {
+        Marker marker = new Marker(mapView);
+        marker.setPosition(point);
+        marker.setTitle("坐标：lat="+point.getLatitude()+",lng="+point.getLongitude());
+        marker.setFlat(true);//设置marker平贴地图效果
+        mapView.getOverlays().add(marker);
+        mapView.invalidate();
     }
 
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-
+    private void setRoundPoint(GeoPoint point){
+        Drawable icon=ContextCompat.getDrawable(this,R.drawable.ic_member_pos);
+        Marker marker=new Marker(mapView);
+        marker.setPosition(point);
+        marker.setIcon(icon);
+        marker.setDraggable(true);
+        marker.setTitle("坐标：lat="+point.getLatitude()+",lng="+point.getLongitude());
+        marker.setFlat(true);//设置marker平贴地图效果
+        mapView.getOverlays().add(marker);
+        mapView.invalidate();
     }
 
-    @Override
-    public void onProviderEnabled(String provider) {
-
+    /**
+     * 线
+     * @param points
+     */
+    private void setPolyline(List<GeoPoint> points) {
+        Polyline polyline = new Polyline();
+        polyline.setWidth(10);
+        polyline.setColor(R.color.colorAccent);
+        polyline.setPoints(points);
+        mapView.getOverlays().add(polyline);
     }
 
-    @Override
-    public void onProviderDisabled(String provider) {
+    /**
+     * 面
+     * @param points
+     */
+    private void setPolygon(List<GeoPoint> points) {
+        Polygon polygon = new Polygon();
+        polygon.setStrokeWidth(10);
+        polygon.setStrokeColor(R.color.colorAccent);
+        polygon.setFillColor(R.color.colorPrimary);
+        polygon.setPoints(points);
+        mapView.getOverlays().add(polygon);
+    }
 
+    /**
+     * 计算两点间距离
+     *
+     * @param point1
+     * @param point2
+     * @return distance in meters
+     */
+    private int getDistance(GeoPoint point1, GeoPoint point2) {
+        return point1.distanceTo(point2);
     }
 
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_location:
-                if (currentLocation != null) {
-                    GeoPoint myPosition = new GeoPoint(currentLocation.getLatitude(), currentLocation.getLongitude());
-                    mapView.getController().animateTo(myPosition);
+                switch (selectedValue){
+                    case 0:
+                    case 1:
+                        mapView.getController().animateTo(convertedPoint);
+                        break;
+                    case 2:
+                        mapView.getController().animateTo(getNetworkLocation());
+                        break;
                 }
+
                 break;
             case R.id.btn_zoom_in:
                 mapView.getController().zoomIn();//默认按级缩放
@@ -319,6 +352,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.btn_map_mode:
                 createMapModeView();
+                break;
+            case R.id.btn_point_add:
+                GeoPoint centerPoint = (GeoPoint) mapView.getMapCenter();
+                setRoundPoint(centerPoint);
+                points.add(centerPoint);
+//                if (points.size()>1){
+                Log.d(TAG, "onClick: " + points.size());
+                setPolyline(points);
+                mapView.invalidate();
+                int distance = 0;
+                for (int i = 0; i < points.size() - 1; i++) {
+                    distance += getDistance(points.get(i), points.get(i + 1));
+                }
+                Toast.makeText(MainActivity.this, "总长" + distance + "米", Toast.LENGTH_LONG).show();
+//                }
                 break;
         }
     }
@@ -333,7 +381,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         builder.setTitle("地图种类")
                 .setSingleChoiceItems(items, selectedValue, new DialogInterface.OnClickListener() {
-
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         // TODO Auto-generated method stub
@@ -344,24 +391,42 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             case 0://GOOGLE_MAP
                                 if (TileSourceFactory.containsTileSource(GOOGLE_MAP)) {
                                     mapView.setTileSource(TileSourceFactory.getTileSource(GOOGLE_MAP));
+                                    resetOverlays();
+                                    setPoint(convertedPoint);
+                                    mapView.getController().setCenter(convertedPoint);
                                     mapView.invalidate();
                                 }
                                 break;
                             case 1://GOOGLE_SATELLITE
                                 if (TileSourceFactory.containsTileSource(GOOGLE_SATELLITE)) {
                                     mapView.setTileSource(TileSourceFactory.getTileSource(GOOGLE_SATELLITE));
+                                    resetOverlays();
+                                    setPoint(convertedPoint);
+                                    mapView.getController().setCenter(convertedPoint);
                                     mapView.invalidate();
                                 }
                                 break;
                             case 2://OSM
                                 mapView.setTileSource(TileSourceFactory.MAPNIK);
+                                resetOverlays();
+                                setPoint(getNetworkLocation());
+                                mapView.getController().setCenter(getNetworkLocation());
                                 mapView.invalidate();
-
                         }
                         selectedValue = which;
                         dialog.dismiss();
                     }
                 });
         builder.create().show();
+    }
+
+    /**
+     * 重置界面图层
+     */
+    private void resetOverlays() {
+        mapView.getOverlays().clear();
+        mapView.getOverlays().add(mCompassOverlay);
+        mapView.getOverlays().add(mRotationGestureOverlay);
+        mapView.getOverlays().add(mScaleBarOverlay);
     }
 }
