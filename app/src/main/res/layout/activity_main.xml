@@ -19,10 +19,19 @@
 
     <ImageView
         android:id="@+id/btn_center"
-        android:layout_width="60dp"
-        android:layout_height="70dp"
+        android:layout_width="31dp"
+        android:layout_height="56dp"
         android:layout_centerInParent="true"
-        android:src="@drawable/icon_plan_point" />
+        android:scaleType="centerInside"
+        android:src="@drawable/icon_plan_point"
+        android:visibility="gone"/>
+    <ImageView
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="30dp"
+        android:src="@drawable/interest_sound_play"/>
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

@@ -27,4 +27,11 @@ public class Constant {
     public static final String URL_MAP_GOOGLE="http://mt3.google.cn/vt/lyrs=m@365000000&hl=zh-CN&gl=cn";
     public static final String URL_MAP_GOOGLE_SATELLITE="http://mt3.google.cn/vt/lyrs=s@76&gl=cn";
 
+    /**
+     * tile source
+     */
+    public static final int GOOGLE_MAP=0;//GOOGLE_MAP
+    public static final int GOOGLE_SATELLITE=1;//GOOGLE_SATELLITE
+    public static final int OSM=2;//OSM
+
 }

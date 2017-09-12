@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical" >
+
+    <RadioGroup
+        android:id="@+id/rg_locationMode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" >
+
+        <RadioButton
+            android:id="@+id/rb_batterySaving"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="低功耗模式" />
+
+        <RadioButton
+            android:id="@+id/rb_deviceSensors"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="仅设备模式" />
+
+        <RadioButton
+            android:id="@+id/rb_hightAccuracy"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:checked="true"
+            android:text="高精度模式" />
+    </RadioGroup>
+
+    <LinearLayout
+        android:id="@+id/layout_interval"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp" >
+
+        <TextView
+            android:id="@+id/tv_info"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="定位周期(ms)" />
+
+        <EditText
+            android:id="@+id/et_interval"
+            android:layout_width="130dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="2dp"
+            android:ems="10"
+            android:hint="2000"
+            android:inputType="number" >
+
+            <requestFocus />
+        </EditText>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="网络超时(ms)" />
+
+        <EditText
+            android:id="@+id/et_httpTimeout"
+            android:layout_width="130dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="2dp"
+            android:ems="10"
+            android:hint="30000"
+            android:inputType="number" >
+
+            <requestFocus />
+        </EditText>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal" >
+
+        <CheckBox
+            android:id="@+id/cb_onceLocation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="单次定位" />
+
+        <CheckBox
+            android:id="@+id/cb_gpsFirst"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="GPS优先" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal" >
+
+        <CheckBox
+            android:id="@+id/cb_needAddress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="逆地理编码" />
+
+        <CheckBox
+            android:id="@+id/cb_cacheAble"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="开启缓存" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal" >
+
+        <CheckBox
+            android:id="@+id/cb_onceLastest"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="提高首次定位精度" />
+        <CheckBox
+            android:id="@+id/cb_sensorAble"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="使用传感器" />
+    </LinearLayout>
+
+</LinearLayout>

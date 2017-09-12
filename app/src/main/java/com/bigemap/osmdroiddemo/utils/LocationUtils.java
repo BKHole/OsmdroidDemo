@@ -77,6 +77,7 @@ public class LocationUtils {
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return null;
         }
+        Log.d(TAG, "getNetWorkLocation: "+LocationManager.NETWORK_PROVIDER);
         if (manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {//是否支持Network定位
             //获取最后的network定位信息
             location = manager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);

@@ -1,5 +1,7 @@
 package com.bigemap.osmdroiddemo.utils;
 
+import android.location.Location;
+
 import org.osmdroid.util.GeoPoint;
 
 /**
@@ -15,11 +17,12 @@ public class PositionUtils {
     /**
      * 84 to 火星坐标系 (GCJ-02) World Geodetic System ==> Mars Geodetic System
      *
-     * @param lat double
-     * @param lon double
+     * @param geoPoint
      * @return GeoPoint
      */
-    public static GeoPoint gps84_To_Gcj02(double lat, double lon) {
+    public static GeoPoint gps84_To_Gcj02(GeoPoint geoPoint) {
+        double lat = geoPoint.getLatitude();
+        double lon = geoPoint.getLongitude();
         if (outOfChina(lat, lon)) {
             return null;
         }
@@ -37,9 +40,63 @@ public class PositionUtils {
     }
 
     /**
+     * 84 to 火星坐标系 (GCJ-02) World Geodetic System ==> Mars Geodetic System
+     *
+     * @param location
+     * @return GeoPoint
+     */
+    public static GeoPoint gps84_To_Gcj02(Location location) {
+        double lat = location.getLatitude();
+        double lon = location.getLongitude();
+        if (outOfChina(lat, lon)) {
+            return null;
+        }
+        double dLat = transformLat(lon - 105.0, lat - 35.0);
+        double dLon = transformLon(lon - 105.0, lat - 35.0);
+        double radLat = lat / 180.0 * pi;
+        double magic = Math.sin(radLat);
+        magic = 1 - ee * magic * magic;
+        double sqrtMagic = Math.sqrt(magic);
+        dLat = (dLat * 180.0) / ((a * (1 - ee)) / (magic * sqrtMagic) * pi);
+        dLon = (dLon * 180.0) / (a / sqrtMagic * Math.cos(radLat) * pi);
+        double mgLat = lat + dLat;
+        double mgLon = lon + dLon;
+        return new GeoPoint(mgLat, mgLon);
+    }
+
+    /**
+     * 84 to 火星坐标系 (GCJ-02) World Geodetic System ==> Mars Geodetic System
+     *
+     * @param location
+     * @return GeoPoint
+     */
+    public static Location gps_To_Gcj02(Location location) {
+        double lat = location.getLatitude();
+        double lon = location.getLongitude();
+        if (outOfChina(lat, lon)) {
+            return null;
+        }
+        double dLat = transformLat(lon - 105.0, lat - 35.0);
+        double dLon = transformLon(lon - 105.0, lat - 35.0);
+        double radLat = lat / 180.0 * pi;
+        double magic = Math.sin(radLat);
+        magic = 1 - ee * magic * magic;
+        double sqrtMagic = Math.sqrt(magic);
+        dLat = (dLat * 180.0) / ((a * (1 - ee)) / (magic * sqrtMagic) * pi);
+        dLon = (dLon * 180.0) / (a / sqrtMagic * Math.cos(radLat) * pi);
+        double mgLat = lat + dLat;
+        double mgLon = lon + dLon;
+        location.setLatitude(mgLat);
+        location.setLongitude(mgLon);
+        return location;
+    }
+
+    /**
      * * 火星坐标系 (GCJ-02) to 84 * * @param lon * @param lat * @return
-     * */
-    public static GeoPoint gcj_To_Gps84(double lat, double lon) {
+     */
+    public static GeoPoint gcj_To_Gps84(GeoPoint geoPoint) {
+        double lat = geoPoint.getLatitude();
+        double lon = geoPoint.getLongitude();
         GeoPoint gps = transform(lat, lon);
         double longitude = lon * 2 - gps.getLongitude();
         double latitude = lat * 2 - gps.getLatitude();
@@ -49,11 +106,11 @@ public class PositionUtils {
     /**
      * 火星坐标系 (GCJ-02) 与百度坐标系 (BD-09) 的转换算法 将 GCJ-02 坐标转换成 BD-09 坐标
      *
-     * @param gg_lat
-     * @param gg_lon
+     * @param geoPoint
+     * @return GeoPoint
      */
-    public static GeoPoint gcj02_To_Bd09(double gg_lat, double gg_lon) {
-        double x = gg_lon, y = gg_lat;
+    public static GeoPoint gcj02_To_Bd09(GeoPoint geoPoint) {
+        double x = geoPoint.getLatitude(), y = geoPoint.getLongitude();
         double z = Math.sqrt(x * x + y * y) + 0.00002 * Math.sin(y * pi);
         double theta = Math.atan2(y, x) + 0.000003 * Math.cos(x * pi);
         double bd_lon = z * Math.cos(theta) + 0.0065;
@@ -64,8 +121,12 @@ public class PositionUtils {
     /**
      * * 火星坐标系 (GCJ-02) 与百度坐标系 (BD-09) 的转换算法 * * 将 BD-09 坐标转换成GCJ-02 坐标 * * @param
      * bd_lat * @param bd_lon * @return
+     * @param geoPoint
+     * @return GeoPoint
      */
-    public static GeoPoint bd09_To_Gcj02(double bd_lat, double bd_lon) {
+    public static GeoPoint bd09_To_Gcj02(GeoPoint geoPoint) {
+        double bd_lat = geoPoint.getLatitude();
+        double bd_lon = geoPoint.getLongitude();
         double x = bd_lon - 0.0065, y = bd_lat - 0.006;
         double z = Math.sqrt(x * x + y * y) - 0.00002 * Math.sin(y * pi);
         double theta = Math.atan2(y, x) - 0.000003 * Math.cos(x * pi);
@@ -76,15 +137,13 @@ public class PositionUtils {
 
     /**
      * (BD-09)-->84
-     * @param bd_lat
-     * @param bd_lon
-     * @return
+     *
+     * @param geoPoint
+     * @return GeoPoint
      */
-    public static GeoPoint bd09_To_Gps84(double bd_lat, double bd_lon) {
-
-        GeoPoint gcj02 = bd09_To_Gcj02(bd_lat, bd_lon);
-        GeoPoint map84 = gcj_To_Gps84(gcj02.getLatitude(), gcj02.getLongitude());
-        return map84;
+    public static GeoPoint bd09_To_Gps84(GeoPoint geoPoint) {
+        GeoPoint gcj02 = bd09_To_Gcj02(geoPoint);
+        return gcj_To_Gps84(gcj02);
 
     }
 
