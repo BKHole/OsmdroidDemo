@@ -10,12 +10,12 @@
 
     <ImageView
         android:id="@+id/btn_point_add"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_alignParentRight="true"
-        android:layout_width="45dp"
-        android:layout_height="45dp"
         android:layout_marginRight="20dp"
         android:layout_marginTop="20dp"
-        android:src="@drawable/add_captain_command"/>
+        android:src="@drawable/add_captain_command" />
 
     <ImageView
         android:id="@+id/btn_center"
@@ -24,14 +24,17 @@
         android:layout_centerInParent="true"
         android:scaleType="centerInside"
         android:src="@drawable/icon_plan_point"
-        android:visibility="gone"/>
+        android:visibility="gone" />
+
     <ImageView
+        android:id="@+id/btn_track_record"
         android:layout_width="60dp"
         android:layout_height="60dp"
-        android:layout_centerHorizontal="true"
         android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
         android:layout_marginBottom="30dp"
-        android:src="@drawable/interest_sound_play"/>
+        android:src="@drawable/btn_track_record_start"/>
+
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -41,9 +44,15 @@
         android:orientation="vertical">
 
         <ImageView
+            android:id="@+id/btn_track"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:src="@drawable/osm_ic_ic_map_ortho"/>
+        <ImageView
             android:id="@+id/btn_map_mode"
             android:layout_width="45dp"
             android:layout_height="45dp"
+            android:layout_marginTop="10dp"
             android:src="@drawable/ic_menu_mapmode" />
 
         <ImageView
@@ -71,8 +80,8 @@
 
         <ImageView
             android:id="@+id/btn_zoom_out"
-            android:layout_width="45dp"
-            android:layout_height="45dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_marginTop="10dp"
             android:src="@drawable/zoom_out" />
     </LinearLayout>

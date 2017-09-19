@@ -565,6 +565,11 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
         return success;
     }
 
+    /**
+     * 坐标系转换
+     * @param originLocation
+     * @return
+     */
     private Location convertLocation(Location originLocation) {
         Location convertedLocation = null;
         switch (mTileSource) {

@@ -1,4 +1,4 @@
-package com.bigemap.osmdroiddemo;
+package com.bigemap.osmdroiddemo.activity;
 
 import android.Manifest;
 import android.annotation.TargetApi;
@@ -11,6 +11,8 @@ import android.provider.Settings;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.KeyEvent;
+
+import com.bigemap.osmdroiddemo.R;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;

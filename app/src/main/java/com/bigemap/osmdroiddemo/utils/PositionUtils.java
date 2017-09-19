@@ -121,6 +121,7 @@ public class PositionUtils {
     /**
      * * 火星坐标系 (GCJ-02) 与百度坐标系 (BD-09) 的转换算法 * * 将 BD-09 坐标转换成GCJ-02 坐标 * * @param
      * bd_lat * @param bd_lon * @return
+     *
      * @param geoPoint
      * @return GeoPoint
      */

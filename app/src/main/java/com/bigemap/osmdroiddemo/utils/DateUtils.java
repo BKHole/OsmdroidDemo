@@ -4,8 +4,10 @@ import android.text.TextUtils;
 
 import com.amap.api.location.AMapLocation;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
+import java.util.TimeZone;
 
 /**
  * Created by Think on 2017/9/11.
@@ -27,6 +29,12 @@ public class DateUtils {
 
     public final static String KEY_URL = "URL";
     public final static String URL_H5LOCATION = "file:///android_asset/location.html";
+
+    private static SimpleDateFormat GMTTimeFormatter = new SimpleDateFormat(
+            "yyyy-MM-dd'T'HH:mm:ss'Z'");
+    {
+        GMTTimeFormatter.setTimeZone(TimeZone.getTimeZone("GMT"));
+    }
     /**
      * 根据定位结果返回定位信息的字符串
      * @param location
@@ -68,7 +76,7 @@ public class DateUtils {
             sb.append("错误描述:" + location.getLocationDetail() + "\n");
         }
         //定位之后的回调时间
-        sb.append("回调时间: " + formatUTC(System.currentTimeMillis(), "yyyy-MM-dd HH:mm:ss") + "\n");
+        sb.append("回调时间: " + formatUTC(System.currentTimeMillis(), null) + "\n");
         return sb.toString();
     }
 
@@ -86,5 +94,18 @@ public class DateUtils {
             sdf.applyPattern(strPattern);
         }
         return sdf == null ? "NULL" : sdf.format(l);
+    }
+
+    public static long getGMTTime(String strGMTTime) {
+        long millisecond = 0;
+        try {
+            millisecond = GMTTimeFormatter.parse(strGMTTime).getTime();
+        } catch (ParseException e) {
+            if (strGMTTime.length() > 0)
+                e.printStackTrace();
+            else
+                System.err.println(e.getMessage());
+        }
+        return millisecond;
     }
 }
