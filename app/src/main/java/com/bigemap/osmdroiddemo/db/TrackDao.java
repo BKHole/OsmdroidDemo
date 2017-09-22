@@ -35,6 +35,7 @@ import static com.bigemap.osmdroiddemo.db.DBHelper.FIELD_totalDistance;
 import static com.bigemap.osmdroiddemo.db.DBHelper.FIELD_totalTime;
 import static com.bigemap.osmdroiddemo.db.DBHelper.FIELD_trackPoints;
 import static com.bigemap.osmdroiddemo.db.DBHelper.FIELD_trackSource;
+import static com.bigemap.osmdroiddemo.db.DBHelper.FIELD_trackType;
 import static com.bigemap.osmdroiddemo.db.DBHelper.FIELD_trackid;
 import static com.bigemap.osmdroiddemo.db.DBHelper.GMTTime;
 import static com.bigemap.osmdroiddemo.db.DBHelper.TRACKS_TABLE;
@@ -58,7 +59,7 @@ public class TrackDao {
     }
 
     public long insertTrack(String trackName, String trackDescription, String startGMTTime,
-                            ArrayList<GeoPoint> locationList, String trackSource) {
+                            ArrayList<GeoPoint> locationList, String trackSource, int trackType) {
         long trackID = 0;
         db.beginTransaction();
         try {
@@ -67,6 +68,7 @@ public class TrackDao {
             cv.put(FIELD_description, trackDescription);
             cv.put(FIELD_startTime, startGMTTime);
             cv.put(FIELD_trackSource, trackSource);
+            cv.put(FIELD_trackType, trackType);
             trackID = db.insert(TRACKS_TABLE, null, cv);
 
             for (GeoPoint loc: locationList) {
@@ -83,6 +85,41 @@ public class TrackDao {
 //                cv.put(FIELD_speed, loc.getSpeed());
 //                cv.put(FIELD_bearing, loc.getBearing());
 //                cv.put(FIELD_accuracy, loc.getAccuracy());
+                db.insert(WAYPOINTS_TABLE, null, cv);
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+        return trackID;
+    }
+
+    public long addTrack(String trackName, String trackDescription, String startGMTTime,
+                            ArrayList<Location> locationList, String trackSource, int trackType) {
+        long trackID = 0;
+        db.beginTransaction();
+        try {
+            ContentValues cv = new ContentValues();
+            cv.put(FIELD_name, trackName);
+            cv.put(FIELD_description, trackDescription);
+            cv.put(FIELD_startTime, startGMTTime);
+            cv.put(FIELD_trackSource, trackSource);
+            cv.put(FIELD_trackType, trackType);
+            trackID = db.insert(TRACKS_TABLE, null, cv);
+
+            for (Location loc: locationList) {
+                String strGMTTime = DateUtils.formatUTC(loc.getTime(),null);
+//                if (loc.getExtras() != null)
+//                    strGMTTime = loc.getExtras().getString(GMTTime);
+                cv = new ContentValues();
+                cv.put(FIELD_trackid, trackID);
+                cv.put(FIELD_time, strGMTTime);
+                cv.put(FIELD_latitude, loc.getLatitude());
+                cv.put(FIELD_longitude, loc.getLongitude());
+                cv.put(FIELD_altitude, loc.getAltitude());
+                cv.put(FIELD_speed, loc.getSpeed());
+                cv.put(FIELD_bearing, loc.getBearing());
+                cv.put(FIELD_accuracy, loc.getAccuracy());
                 db.insert(WAYPOINTS_TABLE, null, cv);
             }
             db.setTransactionSuccessful();
@@ -125,6 +162,7 @@ public class TrackDao {
                         FIELD_maxAltitude,
                         FIELD_trackPoints,
                         FIELD_trackSource,
+                        FIELD_trackType,
                         FIELD_measureVersion },
                 null,
                 null,
@@ -145,6 +183,7 @@ public class TrackDao {
             track.setMaxAltitude(cursor.getDouble(cursor.getColumnIndexOrThrow(FIELD_maxAltitude)));
             track.setTrackPoints(cursor.getInt(cursor.getColumnIndexOrThrow(FIELD_trackPoints)));
             track.setTrackSource(cursor.getInt(cursor.getColumnIndexOrThrow(FIELD_trackSource)));
+            track.setTrackType(cursor.getInt(cursor.getColumnIndexOrThrow(FIELD_trackType)));
             track.setMeasureVersion(cursor.getInt(cursor.getColumnIndexOrThrow(FIELD_measureVersion)));
             trackList.add(track);
         }
@@ -168,6 +207,7 @@ public class TrackDao {
                         FIELD_maxAltitude,
                         FIELD_trackPoints,
                         FIELD_trackSource,
+                        FIELD_trackType,
                         FIELD_measureVersion
                 },
                 FIELD_trackid + "=" + rowId,
@@ -190,6 +230,7 @@ public class TrackDao {
             track.setMaxAltitude(cursor.getDouble(cursor.getColumnIndexOrThrow(FIELD_maxAltitude)));
             track.setTrackPoints(cursor.getInt(cursor.getColumnIndexOrThrow(FIELD_trackPoints)));
             track.setTrackSource(cursor.getInt(cursor.getColumnIndexOrThrow(FIELD_trackSource)));
+            track.setTrackSource(cursor.getInt(cursor.getColumnIndexOrThrow(FIELD_trackType)));
             track.setMeasureVersion(cursor.getInt(cursor.getColumnIndexOrThrow(FIELD_measureVersion)));
             cursor.close();
         }

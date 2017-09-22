@@ -11,7 +11,7 @@ import android.os.Environment;
  */
 
 public class DBHelper extends SQLiteOpenHelper {
-    public static final String DATABASE_NAME = Environment.getExternalStorageDirectory()+ "/Bigemap/map-tracks.db";
+    public static final String DATABASE_NAME = Environment.getExternalStorageDirectory()+ "/AOsmDemo/map-tracks.db";
     public static final int DATABASE_VERSION = 1;
 
     public final static String GMTTime = "GMTTime";
@@ -31,7 +31,8 @@ public class DBHelper extends SQLiteOpenHelper {
     public final static String FIELD_maxAltitude = "max_altitude"; // column 9
     public final static String FIELD_trackPoints = "points"; // column 10
     public final static String FIELD_trackSource = "source"; // column 11
-    public final static String FIELD_measureVersion = "measure_version"; // column 12
+    public final static String FIELD_trackType = "type"; // column 12
+    public final static String FIELD_measureVersion = "measure_version"; // column 13
     /**
      * WAYPOINTS_TABLE
      */
@@ -78,6 +79,7 @@ public class DBHelper extends SQLiteOpenHelper {
             + " "+ FIELD_maxAltitude + " DOUBLE, "
             + " "+ FIELD_trackPoints + " INTEGER, "
             + " "+ FIELD_trackSource + " INTEGER, "
+            + " "+ FIELD_trackType + " INTEGER, "
             + " "+ FIELD_measureVersion + " INTEGER);";
 
     private static final String DELETE_TRACK_TABLE =

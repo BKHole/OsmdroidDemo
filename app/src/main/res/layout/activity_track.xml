@@ -7,7 +7,6 @@
         android:id="@+id/track_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
-
     </android.support.v7.widget.RecyclerView>
 
     <TextView
@@ -18,4 +17,11 @@
         android:background="@color/colorPrimary"
         android:gravity="center_horizontal|center_vertical"
         android:text="清空"/>
+    <TextView
+        android:id="@+id/tv_no_data"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:text="没有轨迹记录"
+        android:visibility="gone"/>
 </RelativeLayout>

@@ -21,6 +21,7 @@ public class Track implements Parcelable {
     private double maxAltitude;
     private int trackPoints;
     private int trackSource;
+    private int trackType;
 
     public int getTrackid() {
         return trackid;
@@ -118,6 +119,14 @@ public class Track implements Parcelable {
         this.trackSource = trackSource;
     }
 
+    public int getTrackType() {
+        return trackType;
+    }
+
+    public void setTrackType(int trackType) {
+        this.trackType = trackType;
+    }
+
     public int getMeasureVersion() {
         return measureVersion;
     }
@@ -147,6 +156,7 @@ public class Track implements Parcelable {
         dest.writeDouble(this.maxAltitude);
         dest.writeInt(this.trackPoints);
         dest.writeInt(this.trackSource);
+        dest.writeInt(this.trackType);
         dest.writeInt(this.measureVersion);
     }
 
@@ -166,10 +176,11 @@ public class Track implements Parcelable {
         this.maxAltitude = in.readDouble();
         this.trackPoints = in.readInt();
         this.trackSource = in.readInt();
+        this.trackType = in.readInt();
         this.measureVersion = in.readInt();
     }
 
-    public static final Parcelable.Creator<Track> CREATOR = new Parcelable.Creator<Track>() {
+    public static final Creator<Track> CREATOR = new Creator<Track>() {
         @Override
         public Track createFromParcel(Parcel source) {
             return new Track(source);

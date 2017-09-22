@@ -4,6 +4,8 @@ import android.location.Location;
 
 import org.osmdroid.util.GeoPoint;
 
+import java.util.ArrayList;
+
 /**
  * 坐标系转换类
  * Created by Think on 2017/9/7.
@@ -190,5 +192,13 @@ public class PositionUtils {
         ret += (150.0 * Math.sin(x / 12.0 * pi) + 300.0 * Math.sin(x / 30.0
                 * pi)) * 2.0 / 3.0;
         return ret;
+    }
+
+    public static ArrayList<Location> wgsToGcj(ArrayList<Location> locations){
+        ArrayList<Location> locationArrayList=new ArrayList<>();
+        for (Location location: locations){
+            locationArrayList.add(gps_To_Gcj02(location));
+        }
+        return locationArrayList;
     }
 }

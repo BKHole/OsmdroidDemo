@@ -10,6 +10,8 @@
     <!-- 获取运营商信息，用于支持提供运营商信息相关的接口 -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
+    <!-- 锁屏模式唤醒 -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <!-- 请求网络 -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -32,6 +34,7 @@
         android:required="false" />
 
     <application
+        android:name=".MainApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -43,8 +46,6 @@
         <meta-data
             android:name="com.amap.api.v2.apikey"
             android:value="bf5207e0ee05765cbd26025d82748b42" />
-        <!-- 定位需要的服务 -->
-        <service android:name="com.amap.api.location.APSService" />
         <!-- 高德 -->
 
         <activity android:name=".activity.MainActivity" />
@@ -60,7 +61,11 @@
         <activity android:name=".activity.TrackActivity" />
 
         <service
-            android:name=".service.MyLocationService" android:enabled="true"/>
+            android:name=".service.MyLocationService"
+            android:enabled="true" />
+
+        <activity android:name=".activity.TrackEditActivity" />
+        <activity android:name=".activity.PointKeywordSearchActivity"></activity>
     </application>
 
 </manifest>

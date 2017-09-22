@@ -8,8 +8,6 @@ package com.bigemap.osmdroiddemo.constants;
 public class Constant {
     public static final String PREFS_NAME = "com.bigemap.prefs";
     public static final String PREFS_TILE_SOURCE = "tilesource";
-    public static final String PREFS_SCROLL_X = "scrollX";
-    public static final String PREFS_SCROLL_Y = "scrollY";
     /**
      * as String because we cannot use double in Preferences, only float
      * and float is not accurate enough

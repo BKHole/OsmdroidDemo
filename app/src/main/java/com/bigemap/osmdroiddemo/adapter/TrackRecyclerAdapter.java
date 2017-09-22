@@ -10,6 +10,8 @@ import android.widget.TextView;
 
 import com.bigemap.osmdroiddemo.R;
 import com.bigemap.osmdroiddemo.entity.Track;
+import com.bigemap.osmdroiddemo.viewholder.BaseRecyclerViewHolder;
+import com.bigemap.osmdroiddemo.viewholder.OnViewClickListener;
 
 import java.util.List;
 
@@ -18,22 +20,19 @@ import java.util.List;
  * Created by Think on 2017/9/14.
  */
 
-public class TrackRecyclerAdapter extends RecyclerView.Adapter<TrackRecyclerAdapter.TrackViewHolder> {
+public class TrackRecyclerAdapter extends BaseRecyclerViewAdapter<TrackRecyclerAdapter.TrackViewHolder> {
     private List<Track> mData;
     private Context mContext;
     private LayoutInflater inflater;
 
 
-    public TrackRecyclerAdapter(List<Track> mData, Context mContext) {
-        this.mData = mData;
+    public TrackRecyclerAdapter(Context mContext) {
         this.mContext = mContext;
         inflater = LayoutInflater.from(mContext);
     }
 
     public void setDataList(List<Track> mData) {
-        for (Track track : mData) {
-            this.mData.add(track);
-        }
+        this.mData=mData;
     }
 
     public void clearAllData(){
@@ -41,39 +40,17 @@ public class TrackRecyclerAdapter extends RecyclerView.Adapter<TrackRecyclerAdap
         notifyDataSetChanged();
     }
 
-    public interface OnItemClickListener {
-        void onItemClick(View view, int position);
-    }
-
-    private OnItemClickListener mOnItemClickListener = null;
-
-    public void setOnItemClickListener(OnItemClickListener listener) {
-        this.mOnItemClickListener = listener;
-    }
-
     @Override
-    public TrackViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public TrackViewHolder onCreateViewHolderS(ViewGroup parent, int viewType) {
         View view = inflater.inflate(R.layout.item_view_track, parent, false);
         return new TrackViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(final TrackViewHolder holder, int position) {
+    public void onBindViewHolderS(TrackViewHolder holder, int position) {
         Track track = mData.get(position);
-        if (mOnItemClickListener != null) {
-            holder.itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    mOnItemClickListener.onItemClick(holder.itemView, holder.getLayoutPosition());
-                }
-            });
-        }
-        if (TextUtils.isEmpty(track.getName())) {
-            track.setName("绘制" + position);
-        }
-        holder.tvTrackName.setText(track.getName());
-        holder.tvTrackTime.setText(track.getStartTime());
-
+        holder.setTag(track);
+        holder.bind(track);
     }
 
     @Override
@@ -81,7 +58,7 @@ public class TrackRecyclerAdapter extends RecyclerView.Adapter<TrackRecyclerAdap
         return mData.size();
     }
 
-    class TrackViewHolder extends RecyclerView.ViewHolder {
+    class TrackViewHolder extends BaseRecyclerViewHolder implements View.OnClickListener {
         TextView tvTrackName;
         TextView tvTrackTime;
 
@@ -89,8 +66,24 @@ public class TrackRecyclerAdapter extends RecyclerView.Adapter<TrackRecyclerAdap
             super(itemView);
             tvTrackName = (TextView) itemView.findViewById(R.id.txt_track_name);
             tvTrackTime = (TextView) itemView.findViewById(R.id.txt_track_time);
+            itemView.setOnClickListener(this);
         }
 
+        private void bind(Track track){
+            if (TextUtils.isEmpty(track.getName())) {
+                track.setName("绘制" + track.getTrackid());
+            }
+            tvTrackName.setText(track.getName());
+            tvTrackTime.setText(track.getStartTime());
+        }
+
+        @Override
+        public void onClick(View v) {
+            OnViewClickListener listener = getOnViewClickListener();
+            if (listener != null) {
+                listener.onClick(v, getTag());
+            }
+        }
     }
 
 }

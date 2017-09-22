@@ -9,21 +9,12 @@
         android:layout_height="match_parent" />
 
     <ImageView
-        android:id="@+id/btn_point_add"
+        android:id="@+id/btn_center"
         android:layout_width="40dp"
         android:layout_height="40dp"
-        android:layout_alignParentRight="true"
-        android:layout_marginRight="20dp"
-        android:layout_marginTop="20dp"
-        android:src="@drawable/add_captain_command" />
-
-    <ImageView
-        android:id="@+id/btn_center"
-        android:layout_width="31dp"
-        android:layout_height="56dp"
         android:layout_centerInParent="true"
         android:scaleType="centerInside"
-        android:src="@drawable/icon_plan_point"
+        android:src="@drawable/center_cross"
         android:visibility="gone" />
 
     <ImageView
@@ -33,13 +24,71 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="30dp"
-        android:src="@drawable/btn_track_record_start"/>
+        android:src="@drawable/btn_track_record_start" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="15dp"
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/btn_point_add"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:src="@drawable/add_captain_command" />
+
+        <ImageView
+            android:id="@+id/btn_point_search"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/btn_img_poi_search"/>
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/layout_main_edit_tool"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="6dp"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/btn_edit_track"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:background="@drawable/btn_shape_edit_tool_left"
+            android:text="轨迹" />
+
+        <Button
+            android:id="@+id/btn_edit_shape"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:background="@color/colorAccent"
+            android:text="图形" />
+
+        <Button
+            android:id="@+id/btn_edit_measure"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:background="@color/colorAccent"
+            android:text="测量" />
+
+        <Button
+            android:id="@+id/btn_edit_close"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:background="@drawable/btn_shape_edit_tool_right"
+            android:text="关闭" />
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="25dp"
         android:layout_marginLeft="20dp"
         android:orientation="vertical">
 
@@ -47,7 +96,8 @@
             android:id="@+id/btn_track"
             android:layout_width="45dp"
             android:layout_height="45dp"
-            android:src="@drawable/osm_ic_ic_map_ortho"/>
+            android:src="@drawable/osm_ic_ic_map_ortho" />
+
         <ImageView
             android:id="@+id/btn_map_mode"
             android:layout_width="45dp"
@@ -68,7 +118,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="25dp"
         android:layout_marginRight="20dp"
         android:orientation="vertical">
 
@@ -80,9 +130,39 @@
 
         <ImageView
             android:id="@+id/btn_zoom_out"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
             android:layout_marginTop="10dp"
             android:src="@drawable/zoom_out" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layout_main_bottom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="5dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/btn_edit_undo"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/btn_img_undo" />
+
+        <ImageView
+            android:id="@+id/btn_edit_prick"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginLeft="10dp"
+            android:src="@drawable/btn_img_edit_prick" />
+
+        <ImageView
+            android:id="@+id/btn_edit_save"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginLeft="10dp"
+            android:src="@drawable/btn_img_edit_favorite_prick" />
     </LinearLayout>
 </RelativeLayout>
