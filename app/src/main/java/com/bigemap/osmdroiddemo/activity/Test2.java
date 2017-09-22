@@ -98,6 +98,7 @@ public class Test2 extends AppCompatActivity implements View.OnClickListener {
     private ArrayList<Location> locationList;
     private TrackDao trackDao;
     private boolean isFirstIn = false;
+    private MyReceiver myReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -267,6 +268,15 @@ public class Test2 extends AppCompatActivity implements View.OnClickListener {
             this.mCompassOverlay.enableCompass();
         }
 
+        long trackId=getIntent().getLongExtra("trackId", -1);
+        if (trackId!=-1){
+            ArrayList<Location> locations=trackDao.getTrackPoints(trackId);
+            ArrayList<GeoPoint> geoPoints=new ArrayList<>();
+            for (Location location:locations){
+                geoPoints.add(new GeoPoint(location));
+            }
+            setPolyline(geoPoints);
+        }
     }
 
     @Override
@@ -442,7 +452,7 @@ public class Test2 extends AppCompatActivity implements View.OnClickListener {
             case R.id.btn_map_mode://地图切换
                 createMapModeView();
                 break;
-            case R.id.btn_point_add://绘制轨迹
+            case R.id.btn_point_add://开始绘制轨迹
                 editToolLayout.setVisibility(View.VISIBLE);
                 centerPointImg.setVisibility(View.VISIBLE);
                 trackRecord.setVisibility(View.GONE);
@@ -458,10 +468,10 @@ public class Test2 extends AppCompatActivity implements View.OnClickListener {
                     Toast.makeText(this, "开始记录轨迹", Toast.LENGTH_SHORT).show();
                     startService(new Intent(this, MyLocationService.class));
                     // 注册广播
-                    MyReceiver receiver = new MyReceiver();
+                    myReceiver = new MyReceiver();
                     IntentFilter filter = new IntentFilter();
                     filter.addAction("com.bigemap.osmdroiddemo.service.intent.locationList");
-                    registerReceiver(receiver, filter);
+                    registerReceiver(myReceiver, filter);
                 } else {
                     trackRecord.setImageResource(R.drawable.btn_track_record_start);
                     stopService(new Intent(this, MyLocationService.class));
@@ -473,6 +483,7 @@ public class Test2 extends AppCompatActivity implements View.OnClickListener {
                     } else {
                         Toast.makeText(this, "此次轨迹路线太短，不作记录", Toast.LENGTH_SHORT).show();
                     }
+                    unregisterReceiver(myReceiver);
                     Log.d(TAG, "trackRecord save success");
                 }
                 clickCount++;
@@ -481,36 +492,26 @@ public class Test2 extends AppCompatActivity implements View.OnClickListener {
                 UIUtils.showTrackActivity(Test2.this);
                 break;
             case R.id.btn_edit_undo://撤销上一步
+//                points.remove(points.size()-1);
+//                drawTrack(points);
                 break;
             case R.id.btn_edit_prick://轨迹描点
                 GeoPoint centerPoint = (GeoPoint) mapView.getMapCenter();
                 setRoundPoint(centerPoint);
                 points.add(centerPoint);
                 Log.d(TAG, "onClick: " + points.size());
-                switch (drawType) {
-                    case 0://画线
-                        setPolyline(points);
-                        int distance = 0;
-                        for (int i = 0; i < points.size() - 1; i++) {
-                            distance += getDistance(points.get(i), points.get(i + 1));
-                        }
-                        Toast.makeText(Test2.this, "总长" + distance + "米", Toast.LENGTH_SHORT).show();
-                        break;
-                    case 1://图形
-                        setPolygon(points);
-                        break;
-                    case 2://周长和面积
-                        break;
-                }
+                drawTrack(points);
                 break;
             case R.id.btn_edit_save://保存轨迹并跳转编辑
+                startTime=DateUtils.formatUTC(System.currentTimeMillis(), null);
                 if (points.size() > 1) {
-                    long trackId = trackDao.insertTrack(name, null, time, points, sourceType, drawType);
+                    long trackId = trackDao.insertTrack(name, null, startTime, points, sourceType, drawType);
                     UIUtils.showTrackEditActivity(Test2.this, trackId);
                     Log.d(TAG, "trackId=" + trackId);
                 } else {
                     Toast.makeText(Test2.this, "轨迹点数不足，请绘制两点以上", Toast.LENGTH_SHORT).show();
                 }
+                points.clear();
                 break;
             case R.id.btn_edit_shape://图形
                 points.clear();
@@ -538,6 +539,27 @@ public class Test2 extends AppCompatActivity implements View.OnClickListener {
                 centerPointImg.setVisibility(View.GONE);
                 trackRecord.setVisibility(View.VISIBLE);
                 mainBottomLayout.setVisibility(View.GONE);
+                break;
+        }
+    }
+
+    /**
+     * 绘制轨迹
+     */
+    private void drawTrack(ArrayList<GeoPoint> geoPoints) {
+        switch (drawType) {
+            case 0://画线
+                setPolyline(points);
+//                        int distance = 0;
+//                        for (int i = 0; i < points.size() - 1; i++) {
+//                            distance += getDistance(points.get(i), points.get(i + 1));
+//                        }
+//                        Toast.makeText(Test2.this, "总长" + distance + "米", Toast.LENGTH_SHORT).show();
+                break;
+            case 1://图形
+                setPolygon(points);
+                break;
+            case 2://周长和面积
                 break;
         }
     }

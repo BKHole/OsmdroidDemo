@@ -43,7 +43,7 @@ public class MyLocationService extends Service implements LocationListener {
         acquireWakeLock();
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, this);
-            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000, 0, this);
+//            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000, 0, this);
         }
         return super.onStartCommand(intent, flags, startId);
     }
@@ -133,7 +133,7 @@ public class MyLocationService extends Service implements LocationListener {
     public void addCoordinates(Location mLocation) {
         if (null != mLocation) {
             if (locationArrayList.size()>0 ){
-                if (mLocation.distanceTo(locationArrayList.get(0))>50){
+                if (mLocation.distanceTo(locationArrayList.get(locationArrayList.size()-1))>50){
                     locationArrayList.add(mLocation);
                 }
             }else{

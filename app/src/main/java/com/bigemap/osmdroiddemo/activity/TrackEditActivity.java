@@ -1,5 +1,6 @@
 package com.bigemap.osmdroiddemo.activity;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -18,7 +19,7 @@ public class TrackEditActivity extends AppCompatActivity {
     private TrackDao trackDao;
     private Track track;
     private EditText trackNameEt, trackDescriptionEt;
-    private TextView saveTrackTv;
+    private TextView saveTrackTv, viewTrackTv;
     private long trackId;
 
     @Override
@@ -48,6 +49,7 @@ public class TrackEditActivity extends AppCompatActivity {
         trackNameEt=$(R.id.et_track_edit_name);
         trackDescriptionEt=$(R.id.et_track_edit_description);
         saveTrackTv=$(R.id.tv_track_edit_save);
+        viewTrackTv=$(R.id.tv_track_edit_view);
         trackNameEt.setText(track.getName());
         if (!TextUtils.isEmpty(track.getDescription())){
             trackDescriptionEt.setText(track.getDescription());
@@ -63,6 +65,14 @@ public class TrackEditActivity extends AppCompatActivity {
                     trackDao.updateTrack(trackId, name, description);
                     Toast.makeText(TrackEditActivity.this, "保存成功", Toast.LENGTH_SHORT).show();
                 }
+            }
+        });
+        viewTrackTv.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent=new Intent(TrackEditActivity.this, Test2.class);
+                intent.putExtra("trackId", trackId);
+                startActivity(intent);
             }
         });
     }
