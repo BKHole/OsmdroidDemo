@@ -33,6 +33,7 @@ public class TrackRecyclerAdapter extends BaseRecyclerViewAdapter<TrackRecyclerA
 
     public void setDataList(List<Track> mData) {
         this.mData=mData;
+        notifyDataSetChanged();
     }
 
     public void clearAllData(){

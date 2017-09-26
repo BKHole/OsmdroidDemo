@@ -65,7 +65,8 @@
             android:enabled="true" />
 
         <activity android:name=".activity.TrackEditActivity" />
-        <activity android:name=".activity.PointKeywordSearchActivity"></activity>
+        <activity android:name=".activity.PointKeywordSearchActivity" />
+        <activity android:name=".kml.FileManagerActivity"></activity>
     </application>
 
 </manifest>

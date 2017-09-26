@@ -92,7 +92,7 @@ public class Test2 extends AppCompatActivity implements View.OnClickListener {
     private LinearLayout mainBottomLayout, editToolLayout;
     private int selectedTileSource = 0;//默认选中地图值
     private int clickCount = 1;//用于轨迹记录按钮切换
-    private int drawType = 0;//0:画线，1:图形，2:周长和面积
+    private int drawType = 0;//0:画线，1:图形，2:周长和面积，3:导入
     private GeoPoint convertedPoint;
     private ArrayList<GeoPoint> points;
     private ArrayList<Location> locationList;
@@ -269,7 +269,7 @@ public class Test2 extends AppCompatActivity implements View.OnClickListener {
         }
 
         long trackId=getIntent().getLongExtra("trackId", -1);
-        if (trackId!=-1){
+        if (trackId>-1){
             ArrayList<Location> locations=trackDao.getTrackPoints(trackId);
             ArrayList<GeoPoint> geoPoints=new ArrayList<>();
             for (Location location:locations){
@@ -461,8 +461,8 @@ public class Test2 extends AppCompatActivity implements View.OnClickListener {
             case R.id.btn_point_search://搜索位置
                 break;
             case R.id.btn_track_record://轨迹记录
+                startTime=DateUtils.formatUTC(System.currentTimeMillis(), null);
                 if (clickCount % 2 != 0) {
-                    startTime=DateUtils.formatUTC(System.currentTimeMillis(), null);
                     locationList.clear();
                     trackRecord.setImageResource(R.drawable.btn_track_record_end);
                     Toast.makeText(this, "开始记录轨迹", Toast.LENGTH_SHORT).show();
@@ -484,7 +484,6 @@ public class Test2 extends AppCompatActivity implements View.OnClickListener {
                         Toast.makeText(this, "此次轨迹路线太短，不作记录", Toast.LENGTH_SHORT).show();
                     }
                     unregisterReceiver(myReceiver);
-                    Log.d(TAG, "trackRecord save success");
                 }
                 clickCount++;
                 break;
@@ -505,7 +504,7 @@ public class Test2 extends AppCompatActivity implements View.OnClickListener {
             case R.id.btn_edit_save://保存轨迹并跳转编辑
                 startTime=DateUtils.formatUTC(System.currentTimeMillis(), null);
                 if (points.size() > 1) {
-                    long trackId = trackDao.insertTrack(name, null, startTime, points, sourceType, drawType);
+                    long trackId = trackDao.insertTrack(name, null, startTime, points, "custom", drawType);
                     UIUtils.showTrackEditActivity(Test2.this, trackId);
                     Log.d(TAG, "trackId=" + trackId);
                 } else {

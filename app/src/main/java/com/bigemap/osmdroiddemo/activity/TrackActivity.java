@@ -5,8 +5,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
@@ -19,7 +20,6 @@ import com.bigemap.osmdroiddemo.entity.Track;
 import com.bigemap.osmdroiddemo.utils.UIUtils;
 import com.bigemap.osmdroiddemo.viewholder.OnViewClickListener;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class TrackActivity extends AppCompatActivity implements View.OnClickListener{
@@ -46,7 +46,6 @@ public class TrackActivity extends AppCompatActivity implements View.OnClickList
 
         initView();
         initData();
-
     }
 
     private void initView(){
@@ -110,11 +109,20 @@ public class TrackActivity extends AppCompatActivity implements View.OnClickList
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater=getMenuInflater();
+        inflater.inflate(R.menu.menu_track, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
                 onBackPressed();
                 return true;
+            case R.id.action_add_more:
+                UIUtils.showFileManagerActivity(this);
             default:
                 return super.onOptionsItemSelected(item);
         }

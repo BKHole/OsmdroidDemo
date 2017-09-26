@@ -5,13 +5,15 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Environment;
 
+import com.bigemap.osmdroiddemo.constants.Constant;
+
 /**
  * 数据库表工具类
  * Created by Think on 2017/9/13.
  */
 
 public class DBHelper extends SQLiteOpenHelper {
-    public static final String DATABASE_NAME = Environment.getExternalStorageDirectory()+ "/AOsmDemo/map-tracks.db";
+    public static final String DATABASE_NAME = Constant.DATABASE_PATH;
     public static final int DATABASE_VERSION = 1;
 
     public final static String GMTTime = "GMTTime";
