@@ -7,16 +7,19 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bigemap.osmdroiddemo.R;
 import com.bigemap.osmdroiddemo.activity.TrackActivity;
 import com.bigemap.osmdroiddemo.adapter.FileRecyclerAdapter;
 import com.bigemap.osmdroiddemo.constants.Constant;
 import com.bigemap.osmdroiddemo.db.TrackDao;
+import com.bigemap.osmdroiddemo.entity.Coordinate;
 import com.bigemap.osmdroiddemo.utils.DateUtils;
 import com.bigemap.osmdroiddemo.utils.FileUtils;
 import com.bigemap.osmdroiddemo.utils.UIUtils;
@@ -34,12 +37,12 @@ public class FileManagerActivity extends AppCompatActivity {
     private List<String> items = null;   //items：存放显示的名称
     private List<String> paths = null;   //paths：存放文件路径
     private List<String> sizes = null;   //sizes：文件大小
-    private String rootPath = Environment.getExternalStorageDirectory().getPath();         //rootPath：起始文件夹
+    private String rootPath = Environment.getExternalStorageDirectory().getPath();//rootPath：起始文件夹
     private TextView path_edit;
     private RecyclerView showFileRecycler;
     private FileRecyclerAdapter adapter;
     private ReadKml readKml;
-    private ArrayList<GeoPoint> coordinates;
+    private ArrayList<Coordinate> coordinates;
     private TrackDao trackDao;
 
     @Override
@@ -86,19 +89,22 @@ public class FileManagerActivity extends AppCompatActivity {
                     getFileDir(file.getPath());
                 } else {
                     try {
-                        readKml.pullXml(file.getPath());
+                        readKml.parseKml(file.getPath());
                         coordinates=readKml.getCoordinateList();
+                        ArrayList<GeoPoint> geoPoints=new ArrayList<GeoPoint>();
+                        for (Coordinate coordinate: coordinates){
+                            geoPoints.add(new GeoPoint(coordinate.getY(), coordinate.getX()));
+                        }
                         String time= DateUtils.formatUTC(System.currentTimeMillis(), null);
-                        trackDao.insertTrack(readKml.t_type,null,time,coordinates,"import",3);
-//                        for (Coordinate coordinate: coordinates){
-//                            Log.d(TAG, "name="+coordinate.getName());
-//                            Log.d(TAG, "x="+coordinate.getX());
-//                            Log.d(TAG, "y="+coordinate.getY());
-//                        }
-                        Intent intent = new Intent();
-                        intent.setClass(FileManagerActivity.this, TrackActivity.class);
-                        startActivity(intent);
-                        finish();
+                        if (coordinates.size()>0){
+                            trackDao.insertTrack(file.getName(),null,time,geoPoints,"import",3);
+                            Intent intent = new Intent();
+                            intent.setClass(FileManagerActivity.this, TrackActivity.class);
+                            startActivity(intent);
+                            finish();
+                        }else{
+                            Toast.makeText(FileManagerActivity.this, "导入失败", Toast.LENGTH_SHORT).show();
+                        }
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -123,17 +129,17 @@ public class FileManagerActivity extends AppCompatActivity {
         File[] files = f.listFiles();
         if (files != null) {
             /* 将所有文件添加ArrayList中 */
-            for (int i = 0; i < files.length; i++) {
-                if (files[i].isDirectory()) {
-                    items.add(files[i].getName());
-                    paths.add(files[i].getPath());
+            for (File file: files) {
+                if (file.isDirectory()) {
+                    items.add(file.getName());
+                    paths.add(file.getPath());
                     sizes.add("");
                 }
-                if (files[i].isFile() && "kml".equals(FileUtils.getMIMEType(files[i]))) {
+                if (file.isFile() && file.getName().endsWith("kml")) {
                     //如果是文件,也只添加后缀名为KML的文件
-                    items.add(files[i].getName());
-                    paths.add(files[i].getPath());
-                    sizes.add(FileUtils.fileSizeMsg(files[i]));
+                    items.add(file.getName());
+                    paths.add(file.getPath());
+                    sizes.add(FileUtils.fileSizeMsg(file));
                 }
             }
             adapter.setFileItems(items);

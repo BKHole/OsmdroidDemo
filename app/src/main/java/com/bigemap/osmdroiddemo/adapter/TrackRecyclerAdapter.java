@@ -12,6 +12,7 @@ import com.bigemap.osmdroiddemo.R;
 import com.bigemap.osmdroiddemo.entity.Track;
 import com.bigemap.osmdroiddemo.viewholder.BaseRecyclerViewHolder;
 import com.bigemap.osmdroiddemo.viewholder.OnViewClickListener;
+import com.bigemap.osmdroiddemo.viewholder.OnViewLongClickListener;
 
 import java.util.List;
 
@@ -59,7 +60,7 @@ public class TrackRecyclerAdapter extends BaseRecyclerViewAdapter<TrackRecyclerA
         return mData.size();
     }
 
-    class TrackViewHolder extends BaseRecyclerViewHolder implements View.OnClickListener {
+    class TrackViewHolder extends BaseRecyclerViewHolder implements View.OnClickListener,View.OnLongClickListener {
         TextView tvTrackName;
         TextView tvTrackTime;
 
@@ -68,6 +69,7 @@ public class TrackRecyclerAdapter extends BaseRecyclerViewAdapter<TrackRecyclerA
             tvTrackName = (TextView) itemView.findViewById(R.id.txt_track_name);
             tvTrackTime = (TextView) itemView.findViewById(R.id.txt_track_time);
             itemView.setOnClickListener(this);
+            itemView.setOnLongClickListener(this);
         }
 
         private void bind(Track track){
@@ -84,6 +86,15 @@ public class TrackRecyclerAdapter extends BaseRecyclerViewAdapter<TrackRecyclerA
             if (listener != null) {
                 listener.onClick(v, getTag());
             }
+        }
+
+        @Override
+        public boolean onLongClick(View v) {
+            OnViewLongClickListener longClickListener=getOnViewLongClickListener();
+            if (longClickListener!=null){
+                longClickListener.onLongClick(v, getTag());
+            }
+            return true;
         }
     }
 

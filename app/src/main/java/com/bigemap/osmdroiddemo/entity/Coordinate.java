@@ -6,8 +6,8 @@ package com.bigemap.osmdroiddemo.entity;
  */
 
 public class Coordinate {
-    private double x;
-    private double y;
+    private double x;//经度
+    private double y;//纬度
     private String name;
     private String costValue;//描述
 

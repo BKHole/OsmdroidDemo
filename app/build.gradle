@@ -34,4 +34,5 @@ dependencies {
     compile 'com.android.support:recyclerview-v7:26.0.0-alpha1'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     testCompile 'junit:junit:4.12'
+    compile 'org.dom4j:dom4j:2.0.2'
 }
