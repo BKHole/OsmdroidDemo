@@ -85,7 +85,7 @@ public class ReadKml {
                     String[] s_array = nodeContent.split(" ");
                     for (int temp = 0; temp < s_array.length; temp++) {
                         GeoPoint geoPoint = stringToPoint(s_array[temp]);
-                        coordinate = new Coordinate(geoPoint.getLatitude(), geoPoint.getLongitude(), t_type);
+                        coordinate = new Coordinate(geoPoint.getLongitude(), geoPoint.getLatitude(), t_type);
                         coordinateList.add(coordinate);
                     }
                 }
@@ -138,7 +138,7 @@ public class ReadKml {
                                 String[] s_array = s.split(" ");
                                 for (String temp: s_array) {
                                     GeoPoint geoPoint = stringToPoint(temp);
-                                    coordinate = new Coordinate(geoPoint.getLatitude(), geoPoint.getLongitude(), t_type);
+                                    coordinate = new Coordinate(geoPoint.getLongitude(), geoPoint.getLatitude(), t_type);
                                     coordinateList.add(coordinate);
                                 }
                                 break;

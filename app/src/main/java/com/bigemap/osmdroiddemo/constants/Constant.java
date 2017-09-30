@@ -42,4 +42,5 @@ public class Constant {
     public static String IMPORT_KML_PATH = APP_BASE_PATH + "/imports";
     public static String EXPORT_KML_PATH = APP_BASE_PATH + "/exports";
 
+    public static final String POST_URL="http://kh.bigemap.com/loginm.php";
 }

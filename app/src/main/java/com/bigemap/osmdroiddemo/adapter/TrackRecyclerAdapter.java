@@ -23,12 +23,10 @@ import java.util.List;
 
 public class TrackRecyclerAdapter extends BaseRecyclerViewAdapter<TrackRecyclerAdapter.TrackViewHolder> {
     private List<Track> mData;
-    private Context mContext;
     private LayoutInflater inflater;
 
 
     public TrackRecyclerAdapter(Context mContext) {
-        this.mContext = mContext;
         inflater = LayoutInflater.from(mContext);
     }
 

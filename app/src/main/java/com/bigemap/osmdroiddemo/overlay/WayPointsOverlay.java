@@ -32,15 +32,15 @@ public class WayPointsOverlay extends ItemizedOverlay<OverlayItem> {
     private long trackId;
     private TrackDao trackDao;
 
-    public WayPointsOverlay(final Drawable pDefaultMarker,final Context pContext,final long trackId) {
+    public WayPointsOverlay(Context ctx, Drawable pDefaultMarker, long trackId) {
         super(pDefaultMarker);
         this.trackId = trackId;
-        trackDao=new TrackDao(pContext);
+        trackDao=new TrackDao(ctx);
         refresh();
     }
 
     public WayPointsOverlay(final Context pContext,final long trackId) {
-        this(pContext.getResources().getDrawable(R.drawable.ic_member_pos), pContext,trackId);
+        this(pContext,pContext.getResources().getDrawable(R.drawable.ic_member_pos), trackId);
     }
 
     @Override
@@ -53,12 +53,13 @@ public class WayPointsOverlay extends ItemizedOverlay<OverlayItem> {
         return wayPointItems.size();
     }
 
+
     @Override
     public boolean onSnapToItem(int x, int y, Point snapPoint, IMapView mapView) {
         return false;
     }
 
-    public void refresh() {
+    private void refresh() {
         wayPointItems.clear();
 
         List<Location> locations=trackDao.getTrackPoints(trackId);

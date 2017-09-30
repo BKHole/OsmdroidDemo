@@ -13,7 +13,6 @@ import android.location.LocationProvider;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PowerManager;
-import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -129,7 +128,7 @@ public class MyLocationService extends Service implements LocationListener {
         }
     }
 
-    // 讲GPS数据放入集合中
+    // 将GPS数据放入集合中
     public void addCoordinates(Location mLocation) {
         if (null != mLocation) {
             if (locationArrayList.size()>0 ){
@@ -149,7 +148,6 @@ public class MyLocationService extends Service implements LocationListener {
      * @param list
      */
     private void sendLocation(ArrayList<Location> list) {
-
         ArrayList<Location> convertedList=PositionUtils.wgsToGcj(list);
         Intent intent = new Intent();
         intent.putExtra("saveGps", convertedList);

@@ -230,7 +230,7 @@ public class TrackDao {
             track.setMaxAltitude(cursor.getDouble(cursor.getColumnIndexOrThrow(FIELD_maxAltitude)));
             track.setTrackPoints(cursor.getInt(cursor.getColumnIndexOrThrow(FIELD_trackPoints)));
             track.setTrackSource(cursor.getInt(cursor.getColumnIndexOrThrow(FIELD_trackSource)));
-            track.setTrackSource(cursor.getInt(cursor.getColumnIndexOrThrow(FIELD_trackType)));
+            track.setTrackType(cursor.getInt(cursor.getColumnIndexOrThrow(FIELD_trackType)));
             track.setMeasureVersion(cursor.getInt(cursor.getColumnIndexOrThrow(FIELD_measureVersion)));
             cursor.close();
         }

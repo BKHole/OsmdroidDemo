@@ -14,6 +14,16 @@ import com.bigemap.osmdroiddemo.R;
 import com.bigemap.osmdroiddemo.db.TrackDao;
 import com.bigemap.osmdroiddemo.entity.Track;
 
+import java.io.IOException;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.FormBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
 public class TrackEditActivity extends AppCompatActivity {
 
     private TrackDao trackDao;
@@ -29,6 +39,7 @@ public class TrackEditActivity extends AppCompatActivity {
         if (getSupportActionBar()!=null){
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
+
         setContentView(R.layout.activity_track_edit);
         initData();
         initView();
@@ -70,9 +81,10 @@ public class TrackEditActivity extends AppCompatActivity {
         viewTrackTv.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent=new Intent(TrackEditActivity.this, Test2.class);
+                Intent intent=new Intent(TrackEditActivity.this, MainActivity.class);
                 intent.putExtra("trackId", trackId);
                 startActivity(intent);
+                finish();
             }
         });
     }

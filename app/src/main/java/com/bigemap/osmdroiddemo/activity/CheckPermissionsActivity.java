@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 权限检查
  * Created by Think on 2017/9/8.
  */
 
@@ -31,7 +32,7 @@ public class CheckPermissionsActivity extends AppCompatActivity {
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
 //            Manifest.permission.READ_EXTERNAL_STORAGE,
-//            Manifest.permission.READ_PHONE_STATE
+            Manifest.permission.READ_PHONE_STATE
     };
 
     private static final int PERMISSON_REQUESTCODE = 0;

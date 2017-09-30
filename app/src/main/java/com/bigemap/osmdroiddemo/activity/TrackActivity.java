@@ -120,6 +120,7 @@ public class TrackActivity extends AppCompatActivity implements View.OnClickList
                                 try {
                                     List<Coordinate> coordinates=new ArrayList<>();
                                     Track track=trackDao.getTrack(trackID);
+                                    Log.d(TAG, "onClick: trackType="+track.getTrackType());
                                     switch (track.getTrackType()){
                                         case 0://line
                                             type="line";
@@ -133,7 +134,7 @@ public class TrackActivity extends AppCompatActivity implements View.OnClickList
                                                 ,location.getLatitude(), track.getName());
                                         coordinates.add(coordinate);
                                     }
-                                    writeKml.createKml("line_"+track.getTrackid(),coordinates,type);
+                                    writeKml.createKml(type+"_"+track.getTrackid(),coordinates,type);
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }

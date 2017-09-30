@@ -93,7 +93,7 @@ public class FileManagerActivity extends AppCompatActivity {
                         coordinates=readKml.getCoordinateList();
                         ArrayList<GeoPoint> geoPoints=new ArrayList<GeoPoint>();
                         for (Coordinate coordinate: coordinates){
-                            geoPoints.add(new GeoPoint(coordinate.getY(), coordinate.getX()));
+                            geoPoints.add(new GeoPoint(coordinate.getLatitude(), coordinate.getLongitude()));
                         }
                         String time= DateUtils.formatUTC(System.currentTimeMillis(), null);
                         if (coordinates.size()>0){

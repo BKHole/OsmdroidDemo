@@ -69,9 +69,8 @@ public class WriteKml {
             Element polygonElement=placeMarkElement.addElement("Polygon");
             Element outerBoundaryIsElement=polygonElement.addElement("outerBoundaryIs");
             Element linearRingElement=outerBoundaryIsElement.addElement("LinearRing");
-            linearRingElement.addElement("coodinates").addText(getCoordinates(alterSamples));
+            linearRingElement.addElement("coordinates").addText(getCoordinates(alterSamples));
         }
-
 
         //将生成的kml写出本地
         OutputFormat format = OutputFormat.createPrettyPrint();
@@ -83,7 +82,7 @@ public class WriteKml {
         xmlWriter.write(document);
 
         xmlWriter.close();
-        //开始对文件进行压缩，一个kml文件其实是一个压缩文件，里面包含一个kml文件和一个png图标
+        //开始对文件进行压缩，一个kmz文件其实是一个压缩文件，里面包含一个kml文件和一个png图标
 //        zipWriteKml(docKmlPath, kmlName);
         Toast.makeText(MainApplication.getAppContext(), "导出kml成功", Toast.LENGTH_SHORT).show();
     }
@@ -133,9 +132,9 @@ public class WriteKml {
     private String getCoordinates(List<Coordinate> coordinates) {
         StringBuilder buffer = new StringBuilder();
         for (Coordinate coordinate : coordinates) {
-            buffer.append(coordinate.getX());
+            buffer.append(coordinate.getLongitude());
             buffer.append(",");
-            buffer.append(coordinate.getY());
+            buffer.append(coordinate.getLatitude());
             buffer.append(" ");
         }
         return buffer.toString().trim();
