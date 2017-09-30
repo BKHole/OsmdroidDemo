@@ -39,7 +39,6 @@ public class TrackEditActivity extends AppCompatActivity {
         if (getSupportActionBar()!=null){
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
-
         setContentView(R.layout.activity_track_edit);
         initData();
         initView();
@@ -74,7 +73,9 @@ public class TrackEditActivity extends AppCompatActivity {
                 String description=trackDescriptionEt.getText().toString();
                 if (!TextUtils.isEmpty(name)){
                     trackDao.updateTrack(trackId, name, description);
-                    Toast.makeText(TrackEditActivity.this, "保存成功", Toast.LENGTH_SHORT).show();
+                    Intent intent=new Intent(TrackEditActivity.this, TrackActivity.class);
+                    startActivity(intent);
+                    finish();
                 }
             }
         });

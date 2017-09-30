@@ -10,6 +10,7 @@ import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
+import android.view.Window;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
@@ -50,6 +51,7 @@ public class PointKeywordSearchActivity extends AppCompatActivity implements Vie
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_point_keyword_search);
         init();
     }
@@ -57,8 +59,6 @@ public class PointKeywordSearchActivity extends AppCompatActivity implements Vie
     private void init() {
         Button searButton = (Button) findViewById(R.id.searchButton);
         searButton.setOnClickListener(this);
-        Button nextButton = (Button) findViewById(R.id.nextButton);
-        nextButton.setOnClickListener(this);
         searchText = (AutoCompleteTextView) findViewById(R.id.keyWord);
         searchText.addTextChangedListener(this);// 添加文本输入框监听事件
         coordinates = new ArrayList<>();
@@ -84,28 +84,13 @@ public class PointKeywordSearchActivity extends AppCompatActivity implements Vie
     }
 
     /**
-     * 点击下一页按钮
-     */
-    public void nextButton() {
-        if (query != null && poiSearch != null && poiResult != null) {
-            if (poiResult.getPageCount() - 1 > currentPage) {
-                currentPage++;
-                query.setPageNum(currentPage);// 设置查后一页
-                poiSearch.searchPOIAsyn();
-            } else {
-                Toast.makeText(this, "已经没有了", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    /**
      * 开始进行poi搜索
      */
     protected void doSearchQuery() {
         showProgressDialog();// 显示进度框
         currentPage = 0;
         query = new PoiSearch.Query(keyWord, "", null);// 第一个参数表示搜索字符串，第二个参数表示poi搜索类型，第三个参数表示poi搜索区域（空字符串代表全国）
-//        query.setPageSize(10);// 设置每页最多返回多少条poiitem
+        query.setPageSize(10);// 设置每页最多返回多少条poiItem
         query.setPageNum(currentPage);// 设置查第一页
 
         poiSearch = new PoiSearch(this, query);
@@ -118,9 +103,6 @@ public class PointKeywordSearchActivity extends AppCompatActivity implements Vie
         switch (v.getId()) {
             case R.id.searchButton:
                 searchButton();
-                break;
-            case R.id.nextButton:
-                nextButton();
                 break;
             default:
                 break;

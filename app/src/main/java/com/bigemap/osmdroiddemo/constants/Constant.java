@@ -23,9 +23,14 @@ public class Constant {
     public static final String PREFS_SHOW_COMPASS = "showCompass";
     /**
      * map source url
+     * m:路线图（r）
+     * t:地形图
+     * p:带标签的地形图
+     * s:卫星图
+     * y:带标签的卫星图
      */
-    public static final String URL_MAP_GOOGLE = "http://mt3.google.cn/vt/lyrs=m@365000000&hl=zh-CN&gl=cn";
-    public static final String URL_MAP_GOOGLE_SATELLITE = "http://mt3.google.cn/vt/lyrs=s@76&gl=cn";
+    public static final String URL_MAP_GOOGLE = "http://mt0.google.cn/vt/lyrs=m&hl=zh-CN&gl=cn&scale=2";
+    public static final String URL_MAP_GOOGLE_SATELLITE = "http://mt0.google.cn/vt/lyrs=y&hl=zh-CN&gl=cn&scale=2";
 
     /**
      * tile source

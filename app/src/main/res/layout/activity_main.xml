@@ -35,18 +35,19 @@
         android:orientation="vertical">
 
         <ImageView
-            android:id="@+id/btn_point_add"
+            android:id="@+id/btn_point_edit"
             android:layout_width="45dp"
             android:layout_height="45dp"
-            android:src="@drawable/add_captain_command" />
+            android:src="@drawable/ic_edit" />
 
         <ImageView
             android:id="@+id/btn_point_search"
             android:layout_width="45dp"
             android:layout_height="45dp"
             android:layout_marginTop="10dp"
-            android:background="@drawable/btn_img_poi_search"/>
+            android:background="@drawable/ic_search_black" />
     </LinearLayout>
+
     <LinearLayout
         android:id="@+id/layout_main_edit_tool"
         android:layout_width="wrap_content"
@@ -103,7 +104,7 @@
             android:layout_width="45dp"
             android:layout_height="45dp"
             android:layout_marginTop="10dp"
-            android:src="@drawable/ic_menu_mapmode" />
+            android:src="@drawable/ic_map" />
 
         <ImageView
             android:id="@+id/btn_location"
@@ -123,9 +124,16 @@
         android:orientation="vertical">
 
         <ImageView
+            android:id="@+id/btn_empty"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:src="@drawable/ic_delete" />
+
+        <ImageView
             android:id="@+id/btn_zoom_in"
             android:layout_width="45dp"
             android:layout_height="45dp"
+            android:layout_marginTop="10dp"
             android:src="@drawable/zoom_in" />
 
         <ImageView

@@ -13,13 +13,11 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.telephony.TelephonyManager;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
@@ -47,22 +45,16 @@ import org.osmdroid.util.BoundingBox;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.OverlayItem;
 import org.osmdroid.views.overlay.Polygon;
 import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.ScaleBarOverlay;
 import org.osmdroid.views.overlay.compass.CompassOverlay;
 import org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider;
-import org.osmdroid.views.overlay.gestures.RotationGestureOverlay;
 import org.osmdroid.views.overlay.infowindow.BasicInfoWindow;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -87,7 +79,7 @@ import static com.bigemap.osmdroiddemo.constants.Constant.PREFS_TILE_SOURCE;
 import static com.bigemap.osmdroiddemo.constants.Constant.PREFS_ZOOM_LEVEL;
 import static com.bigemap.osmdroiddemo.constants.Constant.PREFS_ZOOM_LEVEL_DOUBLE;
 
-public class MainActivity extends CheckPermissionsActivity implements View.OnClickListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final String TAG = "MainActivity";
     public static final String GOOGLE_MAP = "Google Map";
@@ -96,7 +88,6 @@ public class MainActivity extends CheckPermissionsActivity implements View.OnCli
     private SharedPreferences mPrefs;
     private MapView mapView;
     //地图旋转
-    private RotationGestureOverlay mRotationGestureOverlay;
     //比例尺
     private ScaleBarOverlay mScaleBarOverlay;
     //指南针方向
@@ -106,7 +97,7 @@ public class MainActivity extends CheckPermissionsActivity implements View.OnCli
     //设置自定义定位，缩小，放大
     private ImageView locationBtn, track, mapModeBtn;
     private ImageView addPointBtn, searchPointBtn;
-    private ImageView zoomInBtn, zoomOutBtn;
+    private ImageView zoomInBtn, zoomOutBtn, emptyBtn;
     private ImageView undoBtn, prickBtn, saveBtn;//轨迹绘制操作按钮
     private ImageView trackRecord, centerPointImg;//轨迹记录
     private Button shapeBtn, trackBtn, measureBtn, closeBtn;
@@ -123,8 +114,7 @@ public class MainActivity extends CheckPermissionsActivity implements View.OnCli
     private int zoomLevel;
     private Polyline polyline;
     private Polygon polygon;
-    private OkHttpClient mOkHttpClient;
-    private TelephonyManager telManager;
+    private ArrayList<OverlayItem> items;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -148,18 +138,14 @@ public class MainActivity extends CheckPermissionsActivity implements View.OnCli
         Log.d(TAG, "init: tileSource" + mapView.getTileProvider().getTileSource().name());
         mapView.setDrawingCacheEnabled(true);
         mapView.setTilesScaledToDpi(true);//图源比例转换屏幕像素
-
+        mapView.setUseDataConnection(true);
         mapView.setMultiTouchControls(true);//触摸放大、缩小操作
 
-        //地图自由旋转
-        mRotationGestureOverlay = new RotationGestureOverlay(mapView);
-        mapView.getOverlays().add(this.mRotationGestureOverlay);
         //比例尺
-        final DisplayMetrics dm = getResources().getDisplayMetrics();
         mScaleBarOverlay = new ScaleBarOverlay(mapView);
         mScaleBarOverlay.setAlignRight(true);
         mScaleBarOverlay.setAlignBottom(true);
-//        mScaleBarOverlay.setScaleBarOffset(dm.widthPixels / 5, 35);
+        mScaleBarOverlay.setEnableAdjustLength(true);
         mapView.getOverlays().add(mScaleBarOverlay);
 
         //显示指南针
@@ -186,17 +172,18 @@ public class MainActivity extends CheckPermissionsActivity implements View.OnCli
         points = new ArrayList<>();
         locationList = new ArrayList<>();
         trackDao = new TrackDao(this);
-        telManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
         mPrefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        items = new ArrayList<OverlayItem>();
     }
 
     private void initView() {
         zoomInBtn = $(R.id.btn_zoom_in);
         zoomOutBtn = $(R.id.btn_zoom_out);
+        emptyBtn = $(R.id.btn_empty);
         locationBtn = $(R.id.btn_location);
         mapModeBtn = $(R.id.btn_map_mode);
         centerPointImg = $(R.id.btn_center);
-        addPointBtn = $(R.id.btn_point_add);
+        addPointBtn = $(R.id.btn_point_edit);
         searchPointBtn = $(R.id.btn_point_search);
         trackRecord = $(R.id.btn_track_record);
         track = $(R.id.btn_track);
@@ -214,6 +201,7 @@ public class MainActivity extends CheckPermissionsActivity implements View.OnCli
         locationBtn.setOnClickListener(this);
         zoomInBtn.setOnClickListener(this);
         zoomOutBtn.setOnClickListener(this);
+        emptyBtn.setOnClickListener(this);
         mapModeBtn.setOnClickListener(this);
         addPointBtn.setOnClickListener(this);
         searchPointBtn.setOnClickListener(this);
@@ -229,12 +217,12 @@ public class MainActivity extends CheckPermissionsActivity implements View.OnCli
     }
 
     private void initTileSource() {
-        GoogleMapsTileSource googleMapsTileSource = new GoogleMapsTileSource(GOOGLE_MAP, 1, 20, 256, ".png",
+        GoogleMapsTileSource googleMapsTileSource = new GoogleMapsTileSource(GOOGLE_MAP, 1, 20, 512, ".png",
                 new String[]{Constant.URL_MAP_GOOGLE});//加载图源
 
         TileSourceFactory.addTileSource(googleMapsTileSource);
         GoogleSatelliteTileSource satelliteTileSource = new GoogleSatelliteTileSource(GOOGLE_SATELLITE,
-                1, 20, 256, ".png", new String[]{Constant.URL_MAP_GOOGLE_SATELLITE});
+                1, 20, 512, ".png", new String[]{Constant.URL_MAP_GOOGLE_SATELLITE});
         TileSourceFactory.addTileSource(satelliteTileSource);
 
         final String tileSourceName = mPrefs.getString(PREFS_TILE_SOURCE, GOOGLE_MAP);
@@ -254,9 +242,15 @@ public class MainActivity extends CheckPermissionsActivity implements View.OnCli
         Log.d(TAG, "onStart: ");
     }
 
+    /**
+     * 统计次数
+     *
+     * @param type
+     */
     private void postUrl(String type) {
         OkHttpClient mOkHttpClient = new OkHttpClient();
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+            TelephonyManager telManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
             String imei = telManager.getDeviceId();
             RequestBody requestBodyPost = new FormBody.Builder()
                     .add("type", type)
@@ -276,35 +270,12 @@ public class MainActivity extends CheckPermissionsActivity implements View.OnCli
                 @Override
                 public void onResponse(Call call, Response response) throws IOException {
                     final String string = response.body().string();
-                    Log.d(TAG, "onResponse: string"+string);
+                    Log.d(TAG, "onResponse: " + string);
                 }
             });
         }
     }
 
-    /**
-     * 将输入流转换成字符串
-     *
-     * @param is 从网络获取的输入流
-     * @return
-     */
-    public String streamToString(InputStream is) {
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1024];
-            int len = 0;
-            while ((len = is.read(buffer)) != -1) {
-                baos.write(buffer, 0, len);
-            }
-            baos.close();
-            is.close();
-            byte[] byteArray = baos.toByteArray();
-            return new String(byteArray);
-        } catch (Exception e) {
-            Log.e(TAG, e.toString());
-            return null;
-        }
-    }
 
     @Override
     protected void onRestart() {
@@ -397,9 +368,6 @@ public class MainActivity extends CheckPermissionsActivity implements View.OnCli
         postUrl("logout");
         super.onDestroy();
         Log.d(TAG, "onDestroy: ");
-        if (myReceiver != null) {
-            unregisterReceiver(myReceiver);
-        }
     }
 
     // START PERMISSION CHECK
@@ -442,7 +410,8 @@ public class MainActivity extends CheckPermissionsActivity implements View.OnCli
                 // Check for ACCESS_FINE_LOCATION and WRITE_EXTERNAL_STORAGE
                 Boolean location = perms.get(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
                 Boolean storage = perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
-                if (location && storage) {
+                Boolean phone = perms.get(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
+                if (location && storage && phone) {
                     // All Permissions Granted
                     Toast.makeText(MainActivity.this, "All permissions granted", Toast.LENGTH_SHORT).show();
                 } else if (location) {
@@ -554,10 +523,17 @@ public class MainActivity extends CheckPermissionsActivity implements View.OnCli
             case R.id.btn_zoom_out://缩小
                 mapView.getController().zoomOut();
                 break;
+            case R.id.btn_empty:
+                points.clear();
+                mapView.getOverlays().clear();
+                mapView.getOverlays().add(mScaleBarOverlay);
+                mapView.getOverlays().add(mCompassOverlay);
+                mapView.getOverlays().add(myLocationOverlay);
+                break;
             case R.id.btn_map_mode://地图切换
                 createMapModeView();
                 break;
-            case R.id.btn_point_add://开始绘制轨迹
+            case R.id.btn_point_edit://开始绘制轨迹
                 editToolLayout.setVisibility(View.VISIBLE);
                 centerPointImg.setVisibility(View.VISIBLE);
                 trackRecord.setVisibility(View.GONE);
