@@ -43,7 +43,7 @@ public class Constant {
      * file storage path
      */
     private static String APP_BASE_PATH = Environment.getExternalStorageDirectory().getPath() + "/AOsmDemo";
-    public static String DATABASE_PATH = APP_BASE_PATH + "/map-tracks.db";
+    public static String DATABASE_PATH = "map-tracks.db";
     public static String IMPORT_KML_PATH = APP_BASE_PATH + "/imports";
     public static String EXPORT_KML_PATH = APP_BASE_PATH + "/exports";
 

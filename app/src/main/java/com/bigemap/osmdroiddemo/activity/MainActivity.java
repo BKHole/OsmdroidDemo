@@ -16,7 +16,6 @@ import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.View;
@@ -32,10 +31,12 @@ import com.bigemap.osmdroiddemo.TileSource.GoogleSatelliteTileSource;
 import com.bigemap.osmdroiddemo.constants.Constant;
 import com.bigemap.osmdroiddemo.db.TrackDao;
 import com.bigemap.osmdroiddemo.entity.Coordinate;
+import com.bigemap.osmdroiddemo.overlay.MyCompassOverlay;
 import com.bigemap.osmdroiddemo.overlay.MyLocationOverlay;
 import com.bigemap.osmdroiddemo.service.MyLocationService;
 import com.bigemap.osmdroiddemo.utils.DateUtils;
 import com.bigemap.osmdroiddemo.utils.MapMeasureUtils;
+import com.bigemap.osmdroiddemo.utils.PermissionUtils;
 import com.bigemap.osmdroiddemo.utils.PositionUtils;
 import com.bigemap.osmdroiddemo.utils.UIUtils;
 
@@ -45,7 +46,6 @@ import org.osmdroid.util.BoundingBox;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
-import org.osmdroid.views.overlay.OverlayItem;
 import org.osmdroid.views.overlay.Polygon;
 import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.ScaleBarOverlay;
@@ -79,7 +79,7 @@ import static com.bigemap.osmdroiddemo.constants.Constant.PREFS_TILE_SOURCE;
 import static com.bigemap.osmdroiddemo.constants.Constant.PREFS_ZOOM_LEVEL;
 import static com.bigemap.osmdroiddemo.constants.Constant.PREFS_ZOOM_LEVEL_DOUBLE;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     private static final String TAG = "MainActivity";
     public static final String GOOGLE_MAP = "Google Map";
@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //比例尺
     private ScaleBarOverlay mScaleBarOverlay;
     //指南针方向
-    private CompassOverlay mCompassOverlay = null;
+//    private MyCompassOverlay mCompassOverlay = null;
     //设置导航图标的位置
     private MyLocationOverlay myLocationOverlay;
     //设置自定义定位，缩小，放大
@@ -109,23 +109,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ArrayList<GeoPoint> points;
     private ArrayList<Location> locationList;
     private TrackDao trackDao;
-    private boolean isFirstIn = false;
     private MyReceiver myReceiver;
     private int zoomLevel;
     private Polyline polyline;
     private Polygon polygon;
-    private ArrayList<OverlayItem> items;
+    private PermissionUtils permissionUtils;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate: ");
         supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= 23) {
             checkPermissions();
         }
         setContentView(R.layout.activity_main);
-        isFirstIn = true;
         init();
     }
 
@@ -149,9 +147,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mapView.getOverlays().add(mScaleBarOverlay);
 
         //显示指南针
-        mCompassOverlay = new CompassOverlay(this, new InternalCompassOrientationProvider(this), mapView);
-        mCompassOverlay.enableCompass();
-        mapView.getOverlays().add(mCompassOverlay);
+//        mCompassOverlay = new MyCompassOverlay(this, mapView);
+//        mCompassOverlay.enableCompass();
+//        mapView.getOverlays().add(mCompassOverlay);
 
         //显示定位
         GpsMyLocationProvider gps = new GpsMyLocationProvider(this);
@@ -173,7 +171,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         locationList = new ArrayList<>();
         trackDao = new TrackDao(this);
         mPrefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        items = new ArrayList<OverlayItem>();
+        permissionUtils = new PermissionUtils(this);
     }
 
     private void initView() {
@@ -235,10 +233,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    /**
+     * 判断程序是否第一次启动
+     *
+     * @return boolean
+     */
+    private boolean isFirstStart() {
+        return mPrefs.getBoolean("first_start", true);
+    }
+
     @Override
     protected void onStart() {
         super.onStart();
-        postUrl("login");
+//        postUrl("login");
         Log.d(TAG, "onStart: ");
     }
 
@@ -249,7 +256,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      */
     private void postUrl(String type) {
         OkHttpClient mOkHttpClient = new OkHttpClient();
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+        if (permissionUtils.checkPermission(Manifest.permission.READ_PHONE_STATE)) {
             TelephonyManager telManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
             String imei = telManager.getDeviceId();
             RequestBody requestBodyPost = new FormBody.Builder()
@@ -288,39 +295,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onResume();
         Log.d(TAG, "onResume: ");
 
-        zoomLevel = mPrefs.getInt(PREFS_ZOOM_LEVEL_DOUBLE, mPrefs.getInt(PREFS_ZOOM_LEVEL, 15));
+        zoomLevel = mPrefs.getInt(PREFS_ZOOM_LEVEL_DOUBLE, mPrefs.getInt(PREFS_ZOOM_LEVEL, 10));
         mapView.getController().setZoom(zoomLevel);
         myLocationOverlay.enableMyLocation();
-        if (isFirstIn) {
-            myLocationOverlay.runOnFirstFix(new Runnable() {
-                @Override
-                public void run() {
-                    Log.d(TAG, "run: first location=" + myLocationOverlay.getLastFix());
-                    convertedPoint = myLocationOverlay.getMyLocation();
-                    mapView.getController().setCenter(convertedPoint);
-                }
-            });
+        myLocationOverlay.enableCompass();
+        mScaleBarOverlay.enableScaleBar();
+        //判断程序是否第一次启动
+        if (isFirstStart()) {
+            mapView.getController().setCenter(new GeoPoint(30.5702183724, 104.0647735044));
         } else {
-            final String latitudeString = mPrefs.getString(PREFS_LATITUDE_STRING, null);
-            final String longitudeString = mPrefs.getString(PREFS_LONGITUDE_STRING, null);
-            if (latitudeString == null || longitudeString == null) { // case handled for historical reasons only
-                mapView.getController().setCenter(new GeoPoint(30.5702183724, 104.0647735044));
-            } else {
-                final double latitude = Double.valueOf(latitudeString);
-                final double longitude = Double.valueOf(longitudeString);
-                mapView.getController().setCenter(new GeoPoint(latitude, longitude));
-            }
+            final String latitudeString = mPrefs.getString(PREFS_LATITUDE_STRING, "30.5702183724");
+            final String longitudeString = mPrefs.getString(PREFS_LONGITUDE_STRING, "104.0647735044");
+            final double latitude = Double.valueOf(latitudeString);
+            final double longitude = Double.valueOf(longitudeString);
+            mapView.getController().animateTo(new GeoPoint(latitude, longitude));
         }
 
-        mScaleBarOverlay.enableScaleBar();
-        if (mPrefs.getBoolean(PREFS_SHOW_COMPASS, false)) {
-            if (mCompassOverlay != null)
-            //this call is needed because onPause, the orientation provider is destroyed to prevent context leaks
-            {
-                this.mCompassOverlay.setOrientationProvider(new InternalCompassOrientationProvider(this));
-                this.mCompassOverlay.enableCompass();
-            }
-        }
+//        if (mPrefs.getBoolean(PREFS_SHOW_COMPASS, false)) {
+//            if (mCompassOverlay != null) {
+//                //this call is needed because onPause, the orientation provider is destroyed to prevent context leaks
+//                this.mCompassOverlay.setOrientationProvider(new InternalCompassOrientationProvider(this));
+//                this.mCompassOverlay.enableCompass();
+//            }
+//        }
 
         long trackId = getIntent().getLongExtra("trackId", -1);
         if (trackId > -1) {
@@ -344,18 +341,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     protected void onPause() {
-        isFirstIn = false;
         final SharedPreferences.Editor edit = mPrefs.edit();
+        edit.putBoolean("first_start", false);
         edit.putString(PREFS_TILE_SOURCE, mapView.getTileProvider().getTileSource().name());
         edit.putFloat(PREFS_ORIENTATION, mapView.getMapOrientation());
         edit.putString(PREFS_LATITUDE_STRING, String.valueOf(mapView.getMapCenter().getLatitude()));
         edit.putString(PREFS_LONGITUDE_STRING, String.valueOf(mapView.getMapCenter().getLongitude()));
         edit.putInt(PREFS_ZOOM_LEVEL_DOUBLE, mapView.getZoomLevel());
         edit.putBoolean(PREFS_SHOW_LOCATION, myLocationOverlay.isMyLocationEnabled());
-        if (mCompassOverlay != null) {
-            edit.putBoolean(PREFS_SHOW_COMPASS, mCompassOverlay.isCompassEnabled());
-            this.mCompassOverlay.disableCompass();
-        }
+//        if (mCompassOverlay != null) {
+//            edit.putBoolean(PREFS_SHOW_COMPASS, mCompassOverlay.isCompassEnabled());
+//            this.mCompassOverlay.disableCompass();
+//        }
         edit.apply();
         super.onPause();
         Log.d(TAG, "onPause: ");
@@ -365,79 +362,54 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     protected void onDestroy() {
-        postUrl("logout");
+//        postUrl("logout");
         super.onDestroy();
         Log.d(TAG, "onDestroy: ");
     }
 
     // START PERMISSION CHECK
-    final private int REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS = 124;
+
+    private final int REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS = 124;
+    private final int REQUEST_CODE_ASK_LOCATION_PERMISSIONS = 123;
 
     private void checkPermissions() {
         List<String> permissions = new ArrayList<>();
-        String message = "OSMDroid permissions:";
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
-            message += "\nStorage access to store map tiles.";
-        }
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-            message += "\nLocation to show user location.";
         }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
             permissions.add(Manifest.permission.READ_PHONE_STATE);
-            message += "\nLocation to show user location.";
         }
         if (!permissions.isEmpty()) {
-            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
             String[] params = permissions.toArray(new String[permissions.size()]);
-            ActivityCompat.requestPermissions(this, params, REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
+            ActivityCompat.requestPermissions(MainActivity.this, params, REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
         } // else: We already have permissions, so handle as normal
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         switch (requestCode) {
-            case REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS: {
-                Map<String, Integer> perms = new HashMap<>();
-                // Initial
-                perms.put(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                perms.put(Manifest.permission.WRITE_EXTERNAL_STORAGE, PackageManager.PERMISSION_GRANTED);
-                perms.put(Manifest.permission.READ_PHONE_STATE, PackageManager.PERMISSION_GRANTED);
-                // Fill with results
-                for (int i = 0; i < permissions.length; i++)
-                    perms.put(permissions[i], grantResults[i]);
-                // Check for ACCESS_FINE_LOCATION and WRITE_EXTERNAL_STORAGE
-                Boolean location = perms.get(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-                Boolean storage = perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
-                Boolean phone = perms.get(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
-                if (location && storage && phone) {
-                    // All Permissions Granted
-                    Toast.makeText(MainActivity.this, "All permissions granted", Toast.LENGTH_SHORT).show();
-                } else if (location) {
-                    Toast.makeText(this, "Storage permission is required to store map tiles to reduce data usage and for offline usage.", Toast.LENGTH_LONG).show();
-                } else if (storage) {
-                    Toast.makeText(this, "Location permission is required to show the user's location on map.", Toast.LENGTH_LONG).show();
-                } else { // !location && !storage case
-                    // Permission Denied
-                    Toast.makeText(MainActivity.this, "Storage permission is required to store map tiles to reduce data usage and for offline usage." +
-                            "\nLocation permission is required to show the user's location on map.", Toast.LENGTH_SHORT).show();
+            case REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS:
+                if (permissionUtils.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    myLocationOverlay.runOnFirstFix(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.d(TAG, "run: first location=" + myLocationOverlay.getLastFix());
+                            convertedPoint = myLocationOverlay.getMyLocation();
+                            mapView.getController().animateTo(convertedPoint);
+                        }
+                    });
                 }
-            }
-            break;
+                break;
             default:
                 super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+                break;
         }
     }
     // END PERMISSION CHECK
 
-    protected final <T extends View> T $(int id) {
-        return (T) findViewById(id);
-    }
-
     /**
      * 点
-     *
      * @param point
      */
     private void setRoundPoint(GeoPoint point) {
@@ -462,12 +434,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     /**
      * 线
-     *
      * @param points
      */
     private void setPolyline(List<GeoPoint> points) {
         polyline = new Polyline();
-        polyline.setWidth(5);
+        polyline.setWidth(8);
         polyline.setColor(R.color.colorAccent);
         polyline.setPoints(points);
         mapView.getOverlays().add(polyline);
@@ -504,16 +475,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 name = measureBtn.getText() + "&" + time;
                 break;
         }
-        String sourceType = myLocationOverlay.getLastFix().getProvider();
+//        String sourceType = myLocationOverlay.getLastFix().getProvider();
         switch (v.getId()) {
             case R.id.btn_location://定位
                 switch (selectedTileSource) {
                     case Constant.GOOGLE_MAP:
                     case Constant.GOOGLE_SATELLITE:
-                        mapView.getController().animateTo(convertedPoint);
+                        if (permissionUtils.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
+                            mapView.getController().animateTo(myLocationOverlay.getMyLocation());
+                        }else{
+                            checkPermissions();
+                        }
                         break;
                     case Constant.OSM:
-                        mapView.getController().animateTo(PositionUtils.gcj_To_Gps84(convertedPoint));
+                        if (permissionUtils.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
+                            mapView.getController().animateTo(PositionUtils.gcj_To_Gps84(myLocationOverlay.getMyLocation()));
+                        }else{
+                            checkPermissions();
+                        }
                         break;
                 }
                 break;
@@ -527,7 +506,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 points.clear();
                 mapView.getOverlays().clear();
                 mapView.getOverlays().add(mScaleBarOverlay);
-                mapView.getOverlays().add(mCompassOverlay);
+//                mapView.getOverlays().add(mCompassOverlay);
                 mapView.getOverlays().add(myLocationOverlay);
                 break;
             case R.id.btn_map_mode://地图切换
@@ -560,7 +539,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     stopService(new Intent(this, MyLocationService.class));
                     if (locationList.size() > 1) {
                         Toast.makeText(MainActivity.this, "停止记录轨迹", Toast.LENGTH_SHORT).show();
-                        trackDao.addTrack(name, null, startTime, locationList, sourceType, 0);
+                        trackDao.addTrack(name, null, startTime, locationList, "gps", 0);
                     } else {
                         Toast.makeText(this, "此次轨迹路线太短，不作记录", Toast.LENGTH_SHORT).show();
                     }

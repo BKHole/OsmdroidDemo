@@ -51,15 +51,13 @@ public class TrackDao {
     private SQLiteDatabase db;
 
     public TrackDao(Context context) {
-        helper = BeanFactory.getDBHelper(context);
-        // 因为getWritableDatabase内部调用了mContext.openOrCreateDatabase(mName, 0,
-        // mFactory);
-        // 所以要确保context已初始化,我们可以把实例化DBManager的步骤放在Activity的onCreate里
-        db = helper.getWritableDatabase();
+        helper = new DBHelper(context);
+
     }
 
     public long insertTrack(String trackName, String trackDescription, String startGMTTime,
                             ArrayList<GeoPoint> locationList, String trackSource, int trackType) {
+        db = helper.getWritableDatabase();
         long trackID = 0;
         db.beginTransaction();
         try {
@@ -90,12 +88,14 @@ public class TrackDao {
             db.setTransactionSuccessful();
         } finally {
             db.endTransaction();
+            db.close();
         }
         return trackID;
     }
 
     public long addTrack(String trackName, String trackDescription, String startGMTTime,
                             ArrayList<Location> locationList, String trackSource, int trackType) {
+        db = helper.getWritableDatabase();
         long trackID = 0;
         db.beginTransaction();
         try {
@@ -125,12 +125,14 @@ public class TrackDao {
             db.setTransactionSuccessful();
         } finally {
             db.endTransaction();
+            db.close();
         }
         return trackID;
     }
 
     //---deletes a particular track---
     public boolean deleteTrack(long rowId) {
+        db = helper.getWritableDatabase();
         int rowsAffected = 0;
         db.beginTransaction();
         try {
@@ -139,6 +141,7 @@ public class TrackDao {
             db.setTransactionSuccessful();
         } finally {
             db.endTransaction();
+            db.close();
         }
         return rowsAffected > 0;
     }
@@ -148,6 +151,7 @@ public class TrackDao {
      * @return List<Track>
      */
     public List<Track> getAllTracks() {
+        db = helper.getWritableDatabase();
         List<Track> trackList=new ArrayList<>();
         Cursor cursor=db.query(TRACKS_TABLE, new String[] {
                         FIELD_trackid,
@@ -188,11 +192,13 @@ public class TrackDao {
             trackList.add(track);
         }
         cursor.close();
+        db.close();
         return trackList;
     }
 
     //---retrieves a particular track---
     public Track getTrack(long rowId) throws SQLException {
+        db = helper.getWritableDatabase();
         Track track=new Track();
         Cursor cursor = db.query(true, TRACKS_TABLE, new String[] {
                         FIELD_trackid,
@@ -234,16 +240,19 @@ public class TrackDao {
             track.setMeasureVersion(cursor.getInt(cursor.getColumnIndexOrThrow(FIELD_measureVersion)));
             cursor.close();
         }
-
+        db.close();
         return track;
     }
 
     //---updates a track---
     public boolean updateTrack(long trackID, String trackName, String trackDescription) {
+        db = helper.getWritableDatabase();
         ContentValues cv = new ContentValues();
         cv.put(FIELD_name, trackName);
         cv.put(FIELD_description, trackDescription);
-        return db.update(TRACKS_TABLE, cv, FIELD_trackid + "=" + trackID, null) > 0;
+        boolean temp=db.update(TRACKS_TABLE, cv, FIELD_trackid + "=" + trackID, null) > 0;
+        db.close();
+        return temp;
     }
 
     public boolean updateTrack(long trackID, long totalTime, float totalDistance,
@@ -263,6 +272,7 @@ public class TrackDao {
 
     //---retrieves all trackPoints---
     public ArrayList<Location> getTrackPoints(long rowId) throws SQLException {
+        db=helper.getWritableDatabase();
         ArrayList<Location> locations=new ArrayList<>();
         Cursor mCursor = db.query(false, WAYPOINTS_TABLE, new String[] {
                         FIELD_trackid,
@@ -298,6 +308,7 @@ public class TrackDao {
             }
             mCursor.close();
         }
+        db.close();
         return locations;
     }
 
@@ -322,4 +333,5 @@ public class TrackDao {
         String strGMTTime = bundle.getString(GMTTime);
         return strGMTTime;
     }
+
 }

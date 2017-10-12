@@ -1,19 +1,21 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 24
+    compileSdkVersion 25
     buildToolsVersion "26.0.0"
     defaultConfig {
         applicationId "com.bigemap.osmdroiddemo"
         minSdkVersion 14
-        targetSdkVersion 24
+        targetSdkVersion 25
         versionCode 1
         versionName "1.0"
+        vectorDrawables.useSupportLibrary = true
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
@@ -32,8 +34,8 @@ dependencies {
     compile 'org.osmdroid:osmdroid-android:5.6.5'
     compile 'com.android.support:appcompat-v7:26.0.0-alpha1'
     compile 'com.android.support:recyclerview-v7:26.0.0-alpha1'
-    compile 'com.android.support.constraint:constraint-layout:1.0.2'
-    testCompile 'junit:junit:4.12'
     compile 'org.dom4j:dom4j:2.0.2'
     compile 'com.squareup.okhttp3:okhttp:3.9.0'
+    compile 'com.squareup.leakcanary:leakcanary-android:1.5.4'
+    testCompile 'junit:junit:4.12'
 }

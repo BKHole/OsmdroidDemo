@@ -21,6 +21,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <uses-feature
         android:name="android.hardware.location.network"
@@ -49,23 +50,40 @@
             android:value="bf5207e0ee05765cbd26025d82748b42" />
         <!-- 高德 -->
 
-        <activity android:name=".activity.CheckPermissionsActivity" />
-        <activity android:name=".activity.MainActivity" android:launchMode="singleTop">
+        <activity
+            android:name=".activity.LaunchActivity"
+            android:screenOrientation="nosensor"
+            android:theme="@style/AppTheme.Full">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".activity.TrackActivity" />
+        <activity
+            android:name=".activity.MainActivity"
+            android:launchMode="singleTop"
+            android:screenOrientation="nosensor"></activity>
+        <activity
+            android:name=".activity.TrackActivity"
+            android:screenOrientation="nosensor" />
 
         <service
             android:name=".service.MyLocationService"
             android:enabled="true" />
 
-        <activity android:name=".activity.TrackEditActivity" />
-        <activity android:name=".activity.PointKeywordSearchActivity" />
-        <activity android:name=".kml.FileManagerActivity"/>
+        <activity
+            android:name=".activity.TrackEditActivity"
+            android:screenOrientation="nosensor" />
+        <activity
+            android:name=".activity.PointKeywordSearchActivity"
+            android:screenOrientation="nosensor" />
+        <activity
+            android:name=".kml.FileManagerActivity"
+            android:screenOrientation="nosensor" />
+        <activity android:name=".activity.MyCompass">
+
+        </activity>
     </application>
 
 </manifest>

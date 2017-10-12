@@ -24,7 +24,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-public class TrackEditActivity extends AppCompatActivity {
+public class TrackEditActivity extends BaseActivity {
 
     private TrackDao trackDao;
     private Track track;
@@ -44,10 +44,6 @@ public class TrackEditActivity extends AppCompatActivity {
         initView();
         initEvent();
     }
-    protected final <T extends View> T $(int id) {
-        return (T) findViewById(id);
-    }
-
 
     private void initData() {
         trackDao=new TrackDao(this);

@@ -21,19 +21,22 @@ import android.content.Context;
 import android.os.Environment;
 import android.widget.Toast;
 
+import com.squareup.leakcanary.LeakCanary;
+import com.squareup.leakcanary.RefWatcher;
+
 import java.io.File;
-import java.io.IOException;
 
 public class MainApplication extends Application {
     private static Context mAppContext;
     private static String crashReportsPath= Environment.getExternalStorageDirectory()+ "/AOsmDemo/crashReports";
+    private RefWatcher mRefWatcher;
 
     @Override
     public void onCreate() {
         super.onCreate();
         mAppContext = this;
         CrashHandler.getInstance().init(this);
-
+        mRefWatcher=LeakCanary.install(this);
         File crash = new File(MainApplication.getCrashReportsPath() + "/crashed");
         if (crash.exists()) {
             crash.delete();
@@ -41,6 +44,10 @@ public class MainApplication extends Application {
         }
     }
 
+    public static RefWatcher getRefWatcher(Context context) {
+        MainApplication application = (MainApplication) context.getApplicationContext();
+        return application.mRefWatcher;
+    }
     public static Context getAppContext() {
         if (mAppContext == null) throw new RuntimeException();
 

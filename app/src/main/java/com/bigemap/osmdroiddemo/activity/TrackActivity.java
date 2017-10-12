@@ -31,7 +31,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TrackActivity extends AppCompatActivity implements View.OnClickListener{
+public class TrackActivity extends BaseActivity implements View.OnClickListener{
 
     private static final String TAG = "TrackActivity";
     private RecyclerView trackRecycler;
@@ -199,10 +199,6 @@ public class TrackActivity extends AppCompatActivity implements View.OnClickList
             default:
                 return super.onOptionsItemSelected(item);
         }
-    }
-
-    protected final <T extends View> T $(int id) {
-        return (T) findViewById(id);
     }
 
     @Override
