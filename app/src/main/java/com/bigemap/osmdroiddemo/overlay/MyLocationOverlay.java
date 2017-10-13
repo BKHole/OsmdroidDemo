@@ -115,9 +115,6 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
     private float mCompassFrameCenterX;
     private float mCompassFrameCenterY;
 
-    private float testX;
-    private float testY;
-
     private static final int MENU_COMPASS = getSafeMenuId()+1;
 
     // ===========================================================
@@ -144,7 +141,7 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
 
         setCompass(BitmapFactory.decodeResource(mapView.getResources(), R.drawable.compass));
         setDirectionArrow(BitmapFactory.decodeResource(mapView.getResources(), R.drawable.point));
-        setCompassCenter(mDirectionArrowCenterX, mDirectionArrowCenterY);
+//        setCompassCenter(mDirectionArrowCenterX, mDirectionArrowCenterY);
 
         // Calculate position of person icon's feet, scaled to screen density
         mPersonHotspot = new PointF(24.0f * mScale + 0.5f, 39.0f * mScale + 0.5f);
@@ -250,7 +247,7 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
         mPersonHotspot.set(x, y);
     }
 
-    private void drawMyLocation(final Canvas canvas, final MapView mapView, final Location lastFix) {
+    private void drawMyLocation(final Canvas canvas, final MapView mapView, final Location lastFix, final float bearing ) {
         final Projection pj = mapView.getProjection();
         pj.toPixelsFromProjected(mMapCoordsProjected, mMapCoordsTranslated);
 
@@ -271,17 +268,6 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
         canvas.getMatrix(mMatrix);
         mMatrix.getValues(mMatrixValues);
 
-        if (Configuration.getInstance().isDebugMode()) {
-            final float tx = (-mMatrixValues[Matrix.MTRANS_X] + 20)
-                    / mMatrixValues[Matrix.MSCALE_X];
-            final float ty = (-mMatrixValues[Matrix.MTRANS_Y] + 90)
-                    / mMatrixValues[Matrix.MSCALE_Y];
-            canvas.drawText("Lat: " + lastFix.getLatitude(), tx, ty + 5, mPaint);
-            canvas.drawText("Lon: " + lastFix.getLongitude(), tx, ty + 20, mPaint);
-            canvas.drawText("Alt: " + lastFix.getAltitude(), tx, ty + 35, mPaint);
-            canvas.drawText("Acc: " + lastFix.getAccuracy(), tx, ty + 50, mPaint);
-        }
-
         // Calculate real scale including accounting for rotation
         float scaleX = (float) Math.sqrt(mMatrixValues[Matrix.MSCALE_X]
                 * mMatrixValues[Matrix.MSCALE_X] + mMatrixValues[Matrix.MSKEW_Y]
@@ -299,9 +285,20 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
         // Counteract any scaling that may be happening so the icon stays the same size
         canvas.scale(1 / scaleX, 1 / scaleY, mMapCoordsTranslated.x, mMapCoordsTranslated.y);
         // Draw the bitmap
-        testX= mMapCoordsTranslated.x- mDirectionArrowCenterX;
-        testY=mMapCoordsTranslated.y - mDirectionArrowCenterY;
-        canvas.drawBitmap(mDirectionArrowBitmap,testX, testY,mPaint);
+        canvas.drawBitmap(mDirectionArrowBitmap,mMapCoordsTranslated.x- mDirectionArrowCenterX,
+                mMapCoordsTranslated.y - mDirectionArrowCenterY,mPaint);
+        canvas.restore();
+
+//        mCompassMatrix.setRotate(-bearing, mCompassFrameCenterX, mCompassFrameCenterY);
+//        mCompassMatrix.setTranslate(-mCompassFrameCenterX, -mCompassFrameCenterY);
+//        mCompassMatrix.postTranslate(mMapCoordsTranslated.x, mMapCoordsTranslated.y);
+
+        canvas.save();
+        canvas.rotate(-bearing,mMapCoordsTranslated.x, mMapCoordsTranslated.y);
+//        canvas.concat(mMatrix);
+        canvas.scale(1 / scaleX, 1 / scaleY, mMapCoordsTranslated.x, mMapCoordsTranslated.y);
+        canvas.drawBitmap(mCompassFrameBitmap,mMapCoordsTranslated.x- mCompassFrameCenterX,
+                mMapCoordsTranslated.y - mCompassFrameCenterY, sSmoothPaint);
         canvas.restore();
     }
 
@@ -343,13 +340,6 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
         final float centerX = mCompassCenterX * mScale;
         final float centerY = mCompassCenterY * mScale;
 
-        float scaleX = (float) Math.sqrt(mMatrixValues[Matrix.MSCALE_X]
-                * mMatrixValues[Matrix.MSCALE_X] + mMatrixValues[Matrix.MSKEW_Y]
-                * mMatrixValues[Matrix.MSKEW_Y]);
-        float scaleY = (float) Math.sqrt(mMatrixValues[Matrix.MSCALE_Y]
-                * mMatrixValues[Matrix.MSCALE_Y] + mMatrixValues[Matrix.MSKEW_X]
-                * mMatrixValues[Matrix.MSKEW_X]);
-//        mCompassMatrix.setTranslate(-mMapCoordsTranslated.x, -mMapCoordsTranslated.y);
         mCompassMatrix.setRotate(-bearing, mCompassFrameCenterX, mCompassFrameCenterY);
         mCompassMatrix.postTranslate(-mCompassFrameCenterX, -mCompassFrameCenterY);
         mCompassMatrix.postTranslate(mMapCoordsTranslated.x, mMapCoordsTranslated.y);
@@ -372,13 +362,13 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
             return;
 
         if (mLocation != null && isMyLocationEnabled()) {
-            drawMyLocation(c, mapView, mLocation);
+            drawMyLocation(c, mapView, mLocation, mAzimuth + getDisplayOrientation());
         }
 
-        if (isCompassEnabled() && !Float.isNaN(mAzimuth)) {
-            drawCompass(c, mAzimuth + getDisplayOrientation(), mapView.getProjection()
-                    .getScreenRect());
-        }
+//        if (isCompassEnabled() && !Float.isNaN(mAzimuth)) {
+//            drawCompass(c, mAzimuth + getDisplayOrientation(), mapView.getProjection()
+//                    .getScreenRect());
+//        }
     }
 
     @Override

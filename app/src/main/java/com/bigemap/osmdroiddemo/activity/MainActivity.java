@@ -23,6 +23,7 @@ import android.view.Window;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.bigemap.osmdroiddemo.R;
@@ -99,7 +100,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private ImageView addPointBtn, searchPointBtn;
     private ImageView zoomInBtn, zoomOutBtn, emptyBtn;
     private ImageView undoBtn, prickBtn, saveBtn;//轨迹绘制操作按钮
-    private ImageView trackRecord, centerPointImg;//轨迹记录
+    private RelativeLayout prickLayout;
+    private ImageView trackRecord;//轨迹记录
     private Button shapeBtn, trackBtn, measureBtn, closeBtn;
     private LinearLayout mainBottomLayout, editToolLayout;
     private int selectedTileSource = 0;//默认选中地图值
@@ -180,7 +182,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         emptyBtn = $(R.id.btn_empty);
         locationBtn = $(R.id.btn_location);
         mapModeBtn = $(R.id.btn_map_mode);
-        centerPointImg = $(R.id.btn_center);
+        prickLayout=$(R.id.rl_center_prick);
         addPointBtn = $(R.id.btn_point_edit);
         searchPointBtn = $(R.id.btn_point_search);
         trackRecord = $(R.id.btn_track_record);
@@ -212,6 +214,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         trackBtn.setOnClickListener(this);
         measureBtn.setOnClickListener(this);
         closeBtn.setOnClickListener(this);
+        prickLayout.setOnClickListener(this);
     }
 
     private void initTileSource() {
@@ -481,6 +484,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 switch (selectedTileSource) {
                     case Constant.GOOGLE_MAP:
                     case Constant.GOOGLE_SATELLITE:
+//                        permissionUtils.permissionsCheck(Manifest.permission.ACCESS_FINE_LOCATION,REQUEST_CODE_ASK_LOCATION_PERMISSIONS)
                         if (permissionUtils.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
                             mapView.getController().animateTo(myLocationOverlay.getMyLocation());
                         }else{
@@ -514,7 +518,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 break;
             case R.id.btn_point_edit://开始绘制轨迹
                 editToolLayout.setVisibility(View.VISIBLE);
-                centerPointImg.setVisibility(View.VISIBLE);
+                prickLayout.setVisibility(View.VISIBLE);
                 trackRecord.setVisibility(View.GONE);
                 mainBottomLayout.setVisibility(View.VISIBLE);
                 break;
@@ -556,11 +560,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     drawTrack(points);
                 }
                 break;
+            case R.id.rl_center_prick:
             case R.id.btn_edit_prick://轨迹描点
                 GeoPoint centerPoint = (GeoPoint) mapView.getMapCenter();
                 setRoundPoint(centerPoint);
                 points.add(centerPoint);
-                Log.d(TAG, "onClick: " + points.size());
                 drawTrack(points);
                 break;
             case R.id.btn_edit_save://保存轨迹并跳转编辑
@@ -601,7 +605,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             case R.id.btn_edit_close://关闭轨迹绘制
                 points.clear();
                 editToolLayout.setVisibility(View.GONE);
-                centerPointImg.setVisibility(View.GONE);
+                prickLayout.setVisibility(View.GONE);
                 trackRecord.setVisibility(View.VISIBLE);
                 mainBottomLayout.setVisibility(View.GONE);
                 break;
