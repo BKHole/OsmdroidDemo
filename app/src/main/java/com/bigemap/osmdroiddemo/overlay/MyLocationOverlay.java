@@ -9,10 +9,13 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.util.Log;
 import android.view.Display;
 import android.view.Menu;
@@ -139,7 +142,7 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
                 .getSystemService(Context.WINDOW_SERVICE);
         mDisplay = windowManager.getDefaultDisplay();
 
-        setCompass(BitmapFactory.decodeResource(mapView.getResources(), R.drawable.compass));
+        setCompass(getBitmapFromVectorDrawable(mapView.getContext(), R.drawable.ic_compass));
         setDirectionArrow(BitmapFactory.decodeResource(mapView.getResources(), R.drawable.point));
 //        setCompassCenter(mDirectionArrowCenterX, mDirectionArrowCenterY);
 
@@ -778,5 +781,26 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
             default:
                 return 0;
         }
+    }
+
+    /**
+     * 矢量bitmap
+     * @param context
+     * @param drawableId
+     * @return
+     */
+    private Bitmap getBitmapFromVectorDrawable(Context context, int drawableId) {
+        Drawable drawable = ContextCompat.getDrawable(context, drawableId);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            drawable = (DrawableCompat.wrap(drawable)).mutate();
+        }
+
+        Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(),
+                drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+
+        return bitmap;
     }
 }
