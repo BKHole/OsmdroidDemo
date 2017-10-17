@@ -7,7 +7,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
@@ -15,7 +14,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bigemap.osmdroiddemo.R;
-import com.bigemap.osmdroiddemo.activity.TrackActivity;
+import com.bigemap.osmdroiddemo.activity.TrackRecordActivity;
 import com.bigemap.osmdroiddemo.adapter.FileRecyclerAdapter;
 import com.bigemap.osmdroiddemo.constants.Constant;
 import com.bigemap.osmdroiddemo.db.TrackDao;
@@ -99,7 +98,7 @@ public class FileManagerActivity extends AppCompatActivity {
                         if (coordinates.size()>0){
                             trackDao.insertTrack(file.getName(),null,time,geoPoints,"import",3);
                             Intent intent = new Intent();
-                            intent.setClass(FileManagerActivity.this, TrackActivity.class);
+                            intent.setClass(FileManagerActivity.this, TrackRecordActivity.class);
                             startActivity(intent);
                             finish();
                         }else{

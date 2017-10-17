@@ -7,7 +7,7 @@
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/title_background">
+        android:background="@drawable/bg_search_edit">
 
         <AutoCompleteTextView
             android:id="@+id/keyWord"

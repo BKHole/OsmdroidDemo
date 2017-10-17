@@ -3,7 +3,7 @@ package com.bigemap.osmdroiddemo.utils;
 import android.content.Context;
 import android.content.Intent;
 
-import com.bigemap.osmdroiddemo.activity.TrackActivity;
+import com.bigemap.osmdroiddemo.activity.TrackRecordActivity;
 import com.bigemap.osmdroiddemo.activity.TrackEditActivity;
 import com.bigemap.osmdroiddemo.kml.FileManagerActivity;
 
@@ -14,7 +14,7 @@ import com.bigemap.osmdroiddemo.kml.FileManagerActivity;
 
 public class UIUtils {
     public static void showTrackActivity(Context context){
-        Intent intent=new Intent(context.getApplicationContext(), TrackActivity.class);
+        Intent intent=new Intent(context.getApplicationContext(), TrackRecordActivity.class);
         context.startActivity(intent);
     }
 

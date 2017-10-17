@@ -4,7 +4,6 @@ import android.content.DialogInterface;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -14,7 +13,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.bigemap.osmdroiddemo.R;
 import com.bigemap.osmdroiddemo.adapter.TrackRecyclerAdapter;
@@ -31,7 +29,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TrackActivity extends BaseActivity implements View.OnClickListener{
+public class TrackRecordActivity extends BaseActivity implements View.OnClickListener{
 
     private static final String TAG = "TrackActivity";
     private RecyclerView trackRecycler;
@@ -86,8 +84,7 @@ public class TrackActivity extends BaseActivity implements View.OnClickListener{
             public void onClick(View v, Object data) {
                 Track track= (Track) data;
                 trackID=track.getTrackid();
-                UIUtils.showTrackEditActivity(TrackActivity.this, trackID);
-//                trackDao.getTrackPoints(trackID);//如果选中该条轨迹，回到主界面展示该轨迹，将此处数据传回地图界面
+                UIUtils.showTrackEditActivity(TrackRecordActivity.this, trackID);
                 Log.d(TAG, "onItemClick: trackID="+trackID);
             }
         });
@@ -208,7 +205,7 @@ public class TrackActivity extends BaseActivity implements View.OnClickListener{
                 trackDao.clearAll();
                 trackAdapter.clearAllData();
                 noDataTv.setVisibility(View.VISIBLE);
-                Toast.makeText(TrackActivity.this, "clear all success", Toast.LENGTH_SHORT).show();
+                toastUtils.showSingletonToast("清除成功");
                 break;
         }
     }

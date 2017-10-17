@@ -2,11 +2,14 @@ package com.bigemap.osmdroiddemo.overlay;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -69,7 +72,7 @@ public class MyCompassOverlay extends Overlay implements IOverlayMenuProvider, I
                 .getSystemService(Context.WINDOW_SERVICE);
         mDisplay = windowManager.getDefaultDisplay();
 
-        mCompassFrameBitmap=BitmapFactory.decodeResource(context.getResources(), R.drawable.compass);
+        mCompassFrameBitmap=getBitmapFromVectorDrawable(context, R.drawable.ic_vector_compass);
         mCompassFrameCenterX = mCompassFrameBitmap.getWidth() / 2 - 0.5f;
         mCompassFrameCenterY = mCompassFrameBitmap.getHeight() / 2 - 0.5f;
 
@@ -179,7 +182,7 @@ public class MyCompassOverlay extends Overlay implements IOverlayMenuProvider, I
         pMenu.add(0, MENU_COMPASS + pMenuIdOffset, Menu.NONE,
                 pMapView.getContext().getResources().getString(org.osmdroid.library.R.string.compass))
 
-                .setIcon(pMapView.getContext().getResources().getDrawable(org.osmdroid.library.R.drawable.ic_menu_compass))
+                .setIcon(ContextCompat.getDrawable(pMapView.getContext(),org.osmdroid.library.R.drawable.ic_menu_compass))
                 .setCheckable(true);
 
         return true;
@@ -282,7 +285,7 @@ public class MyCompassOverlay extends Overlay implements IOverlayMenuProvider, I
     // ===========================================================
 
     private int getDisplayOrientation() {
-        switch (mDisplay.getOrientation()) {
+        switch (mDisplay.getRotation()) {
             case Surface.ROTATION_90:
                 return 90;
             case Surface.ROTATION_180:
@@ -292,5 +295,27 @@ public class MyCompassOverlay extends Overlay implements IOverlayMenuProvider, I
             default:
                 return 0;
         }
+    }
+
+    /**
+     * 矢量bitmap
+     *
+     * @param context
+     * @param drawableId
+     * @return
+     */
+    private Bitmap getBitmapFromVectorDrawable(Context context, int drawableId) {
+        Drawable drawable = ContextCompat.getDrawable(context, drawableId);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            drawable = (DrawableCompat.wrap(drawable)).mutate();
+        }
+
+        Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(),
+                drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+
+        return bitmap;
     }
 }

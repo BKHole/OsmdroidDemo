@@ -8,7 +8,7 @@
         android:id="@+id/tv_file_manager_path"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:drawableLeft="@drawable/path"
+        android:drawableLeft="@drawable/img_path"
         android:drawablePadding="1dp"
         android:padding="1dp"
         android:textSize="20sp"/>
@@ -19,7 +19,7 @@
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/file_manager_recycler_view"
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:longClickable="true"/>
 </LinearLayout>

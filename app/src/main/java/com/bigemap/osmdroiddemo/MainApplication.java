@@ -18,30 +18,19 @@ package com.bigemap.osmdroiddemo;
 
 import android.app.Application;
 import android.content.Context;
-import android.os.Environment;
-import android.widget.Toast;
 
 import com.squareup.leakcanary.LeakCanary;
 import com.squareup.leakcanary.RefWatcher;
 
-import java.io.File;
-
 public class MainApplication extends Application {
     private static Context mAppContext;
-    private static String crashReportsPath= Environment.getExternalStorageDirectory()+ "/AOsmDemo/crashReports";
     private RefWatcher mRefWatcher;
 
     @Override
     public void onCreate() {
         super.onCreate();
         mAppContext = this;
-        CrashHandler.getInstance().init(this);
         mRefWatcher=LeakCanary.install(this);
-        File crash = new File(MainApplication.getCrashReportsPath() + "/crashed");
-        if (crash.exists()) {
-            crash.delete();
-            Toast.makeText(this, "application had crashed.", Toast.LENGTH_SHORT).show();
-        }
     }
 
     public static RefWatcher getRefWatcher(Context context) {
@@ -52,10 +41,6 @@ public class MainApplication extends Application {
         if (mAppContext == null) throw new RuntimeException();
 
         return mAppContext;
-    }
-
-    public static String getCrashReportsPath() {
-        return crashReportsPath;
     }
 
 }

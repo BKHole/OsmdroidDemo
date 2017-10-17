@@ -51,8 +51,8 @@ public class FileRecyclerAdapter extends BaseRecyclerViewAdapter<FileRecyclerAda
     }
     @Override
     public FileHolder onCreateViewHolderS(ViewGroup parent, int viewType) {
-        mIcon_folder = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.folder);      //文件夹的图文件
-        mIcon_video = BitmapFactory.decodeResource(mContext.getResources(),R.drawable.video);
+        mIcon_folder = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.img_folder);      //文件夹的图文件
+        mIcon_video = BitmapFactory.decodeResource(mContext.getResources(),R.drawable.img_video);
         View view=inflater.inflate(R.layout.item_view_file, parent, false);
         return new FileHolder(view);
     }

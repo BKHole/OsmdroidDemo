@@ -138,24 +138,7 @@ public class LaunchActivity extends BaseActivity {
                     loadHomePage();
                 }else {
                     // Permission Denied
-                    new AlertDialog.Builder(this).setTitle("权限设置").setMessage("没有访问内存的权限，要去设置吗？")
-                            .setNegativeButton("取消", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    finish();
-                                }
-                            })
-                            .setPositiveButton("去设置", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    Intent intent=new Intent();
-                                    intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                                    Uri uri = Uri.fromParts("package", getPackageName(), null);
-                                    intent.setData(uri);
-                                    startActivity(intent);
-                                    finish();
-                                }
-                            }).create().show();
+                    showMissingPermissionDialog();
                 }
                 break;
             default:
@@ -188,5 +171,37 @@ public class LaunchActivity extends BaseActivity {
             timer.cancel();
         }
         super.onDestroy();
+    }
+
+    // 显示缺失权限提示
+    private void showMissingPermissionDialog() {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        final AlertDialog alertDialog = builder.create();
+
+        builder.setMessage("当前应用缺少必要权限。\n\n请点击\"设置\"-\"权限\"-打开所需权限。\n\n最后点击两次后退按钮，即可返回。");
+        // 拒绝, 退出应用
+        builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                alertDialog.dismiss();
+            }
+        });
+
+        builder.setPositiveButton("设置", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                startAppSettings();
+            }
+        });
+
+        builder.show();
+    }
+
+    // 启动应用的设置
+    private void startAppSettings() {
+        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        intent.setData(Uri.parse( "package:" + getPackageName()));
+        startActivity(intent);
     }
 }

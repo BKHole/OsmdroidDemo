@@ -3,7 +3,6 @@ package com.bigemap.osmdroiddemo.activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -33,9 +32,8 @@ import com.bigemap.osmdroiddemo.viewholder.OnViewClickListener;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PointKeywordSearchActivity extends BaseActivity implements View.OnClickListener,
+public class PointSearchActivity extends BaseActivity implements View.OnClickListener,
         PoiSearch.OnPoiSearchListener, Inputtips.InputtipsListener, TextWatcher {
-    private static final String TAG = "PointKeywordSearchActiv";
 
     private AutoCompleteTextView searchText;// 输入搜索关键字
     private String keyWord = "";// 要输入的poi搜索关键字
@@ -51,8 +49,8 @@ public class PointKeywordSearchActivity extends BaseActivity implements View.OnC
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
-        setContentView(R.layout.activity_point_keyword_search);
+//        supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
+        setContentView(R.layout.activity_point_search);
         init();
     }
 
@@ -150,12 +148,12 @@ public class PointKeywordSearchActivity extends BaseActivity implements View.OnC
                             @Override
                             public void onClick(View v, Object data) {
                                 Coordinate coordinate = (Coordinate) data;
-                                Intent intent=new Intent(PointKeywordSearchActivity.this, MainActivity.class);
+                                Intent intent=new Intent(PointSearchActivity.this, MainActivity.class);
                                 Bundle bundle=new Bundle();
                                 bundle.putParcelable("coordinate", coordinate);
                                 intent.putExtras(bundle);
                                 startActivity(intent);
-                                PointKeywordSearchActivity.this.finish();
+                                PointSearchActivity.this.finish();
                             }
                         });
                     } else if (suggestionCities.size() > 0) {

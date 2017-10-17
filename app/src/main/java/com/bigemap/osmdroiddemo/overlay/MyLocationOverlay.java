@@ -118,7 +118,7 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
     private float mCompassFrameCenterX;
     private float mCompassFrameCenterY;
 
-    private static final int MENU_COMPASS = getSafeMenuId()+1;
+    private static final int MENU_COMPASS = getSafeMenuId() + 1;
 
     // ===========================================================
     // Constructors
@@ -142,8 +142,8 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
                 .getSystemService(Context.WINDOW_SERVICE);
         mDisplay = windowManager.getDefaultDisplay();
 
-        setCompass(getBitmapFromVectorDrawable(mapView.getContext(), R.drawable.ic_compass));
-        setDirectionArrow(BitmapFactory.decodeResource(mapView.getResources(), R.drawable.point));
+        setCompass(getBitmapFromVectorDrawable(mapView.getContext(), R.drawable.ic_vector_compass));
+        setDirectionArrow(BitmapFactory.decodeResource(mapView.getResources(), R.drawable.img_point));
 //        setCompassCenter(mDirectionArrowCenterX, mDirectionArrowCenterY);
 
         // Calculate position of person icon's feet, scaled to screen density
@@ -158,7 +158,7 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
     /**
      * fix for https://github.com/osmdroid/osmdroid/issues/249
      *
-     * @param directionArrowBitmap
+     * @param directionArrowBitmap  定位图标
      */
     public void setDirectionArrow(final Bitmap directionArrowBitmap) {
         this.mDirectionArrowBitmap = directionArrowBitmap;
@@ -206,6 +206,8 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
             mMyLocationProvider.destroy();
 
         mMyLocationProvider = null;
+        mOrientationProvider = null;
+
         super.onDetach(mapView);
     }
 
@@ -250,7 +252,7 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
         mPersonHotspot.set(x, y);
     }
 
-    private void drawMyLocation(final Canvas canvas, final MapView mapView, final Location lastFix, final float bearing ) {
+    private void drawMyLocation(final Canvas canvas, final MapView mapView, final Location lastFix, final float bearing) {
         final Projection pj = mapView.getProjection();
         pj.toPixelsFromProjected(mMapCoordsProjected, mMapCoordsTranslated);
 
@@ -288,21 +290,23 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
         // Counteract any scaling that may be happening so the icon stays the same size
         canvas.scale(1 / scaleX, 1 / scaleY, mMapCoordsTranslated.x, mMapCoordsTranslated.y);
         // Draw the bitmap
-        canvas.drawBitmap(mDirectionArrowBitmap,mMapCoordsTranslated.x- mDirectionArrowCenterX,
-                mMapCoordsTranslated.y - mDirectionArrowCenterY,mPaint);
+        canvas.drawBitmap(mDirectionArrowBitmap, mMapCoordsTranslated.x - mDirectionArrowCenterX,
+                mMapCoordsTranslated.y - mDirectionArrowCenterY, mPaint);
         canvas.restore();
 
 //        mCompassMatrix.setRotate(-bearing, mCompassFrameCenterX, mCompassFrameCenterY);
 //        mCompassMatrix.setTranslate(-mCompassFrameCenterX, -mCompassFrameCenterY);
 //        mCompassMatrix.postTranslate(mMapCoordsTranslated.x, mMapCoordsTranslated.y);
 
-        canvas.save();
-        canvas.rotate(-bearing,mMapCoordsTranslated.x, mMapCoordsTranslated.y);
+        if (isCompassEnabled()) {
+            canvas.save();
+            canvas.rotate(-bearing, mMapCoordsTranslated.x, mMapCoordsTranslated.y);
 //        canvas.concat(mMatrix);
-        canvas.scale(1 / scaleX, 1 / scaleY, mMapCoordsTranslated.x, mMapCoordsTranslated.y);
-        canvas.drawBitmap(mCompassFrameBitmap,mMapCoordsTranslated.x- mCompassFrameCenterX,
-                mMapCoordsTranslated.y - mCompassFrameCenterY, sSmoothPaint);
-        canvas.restore();
+            canvas.scale(1 / scaleX, 1 / scaleY, mMapCoordsTranslated.x, mMapCoordsTranslated.y);
+            canvas.drawBitmap(mCompassFrameBitmap, mMapCoordsTranslated.x - mCompassFrameCenterX,
+                    mMapCoordsTranslated.y - mCompassFrameCenterY, sSmoothPaint);
+            canvas.restore();
+        }
     }
 
     private Rect getMyLocationDrawingBounds(int zoomLevel, Location lastFix, Rect reuse) {
@@ -351,7 +355,7 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
         canvas.concat(proj.getInvertedScaleRotateCanvasMatrix());
         canvas.concat(mCompassMatrix);
 //        canvas.scale(1 / scaleX, 1 / scaleY, mMapCoordsTranslated.x, mMapCoordsTranslated.y);
-        canvas.drawBitmap(mCompassFrameBitmap, 0,0, sSmoothPaint);
+        canvas.drawBitmap(mCompassFrameBitmap, 0, 0, sSmoothPaint);
         canvas.restore();
 
     }
@@ -440,7 +444,7 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
 
         pMenu.add(0, MENU_COMPASS + pMenuIdOffset, Menu.NONE,
                 pMapView.getContext().getResources().getString(org.osmdroid.library.R.string.compass))
-                .setIcon(ContextCompat.getDrawable(pMapView.getContext(),R.drawable.compass))
+                .setIcon(ContextCompat.getDrawable(pMapView.getContext(), R.drawable.img_compass))
                 .setCheckable(true);
         return true;
     }
@@ -466,14 +470,14 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
                 this.enableMyLocation();
             }
             return true;
-        } else if (menuId == MENU_COMPASS){
+        } else if (menuId == MENU_COMPASS) {
             if (this.isCompassEnabled()) {
                 this.disableCompass();
             } else {
                 this.enableCompass();
             }
             return true;
-        }else {
+        } else {
             return false;
         }
     }
@@ -771,13 +775,14 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
     }
 
     private int getDisplayOrientation() {
-        switch (mDisplay.getOrientation()) {
+        switch (mDisplay.getRotation()) {
             case Surface.ROTATION_90:
                 return 90;
             case Surface.ROTATION_180:
                 return 180;
             case Surface.ROTATION_270:
                 return 270;
+            case Surface.ROTATION_0:
             default:
                 return 0;
         }
@@ -785,6 +790,7 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
 
     /**
      * 矢量bitmap
+     *
      * @param context
      * @param drawableId
      * @return

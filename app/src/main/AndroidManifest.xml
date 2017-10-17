@@ -56,16 +56,16 @@
             android:theme="@style/AppTheme.Full">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
             android:name=".activity.MainActivity"
             android:launchMode="singleTop"
-            android:screenOrientation="nosensor"></activity>
+            android:screenOrientation="nosensor"
+            android:theme="@style/AppTheme.NoActionBar"/>
         <activity
-            android:name=".activity.TrackActivity"
+            android:name=".activity.TrackRecordActivity"
             android:screenOrientation="nosensor" />
 
         <service
@@ -76,14 +76,12 @@
             android:name=".activity.TrackEditActivity"
             android:screenOrientation="nosensor" />
         <activity
-            android:name=".activity.PointKeywordSearchActivity"
-            android:screenOrientation="nosensor" />
+            android:name=".activity.PointSearchActivity"
+            android:screenOrientation="nosensor"
+            android:theme="@style/AppTheme.NoActionBar"/>
         <activity
             android:name=".kml.FileManagerActivity"
             android:screenOrientation="nosensor" />
-        <activity android:name=".activity.MyCompass">
-
-        </activity>
     </application>
 
 </manifest>

@@ -96,7 +96,7 @@ public class PermissionUtils {
     }
 
     // 启动应用的设置
-    public void startAppSettings() {
+    private void startAppSettings() {
         Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
         intent.setData(Uri.parse( PACKAGE + mContext.getPackageName()));
         mContext.startActivity(intent);

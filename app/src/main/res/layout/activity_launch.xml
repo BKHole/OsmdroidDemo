@@ -8,17 +8,14 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="fitXY"
-        android:src="@drawable/title" />
+        android:src="@drawable/img_launch_start" />
 
     <RelativeLayout
-        android:id="@+id/rl_show_ad"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="visible"
-        >
+        android:visibility="visible">
 
         <ImageView
-            android:id="@+id/iv_ad_img"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:scaleType="fitXY" />
@@ -38,13 +35,11 @@
                 android:id="@+id/tv_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_start_page_circle"
+                android:background="@drawable/bg_start_page"
                 android:textColor="@color/white"
                 android:textSize="19sp"
-                android:text="跳过"
-                />
+                android:text="跳过"/>
         </FrameLayout>
     </RelativeLayout>
-
 </RelativeLayout>
 
