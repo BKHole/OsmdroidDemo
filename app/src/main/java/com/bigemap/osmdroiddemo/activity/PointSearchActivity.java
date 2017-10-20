@@ -60,7 +60,7 @@ public class PointSearchActivity extends BaseActivity implements View.OnClickLis
         searchText = $(R.id.keyWord);
         searchText.addTextChangedListener(this);// 添加文本输入框监听事件
         coordinates = new ArrayList<>();
-        pointRecyclerView = $(R.id.point_search_recycler_view);
+        pointRecyclerView = $(R.id.list_point_searched);
         adapter = new PointSearchAdapter(this);
         pointRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         //如果可以确定每个item的高度是固定的，设置这个选项可以提高性能

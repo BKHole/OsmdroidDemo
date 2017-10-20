@@ -1,7 +1,9 @@
 package com.bigemap.osmdroiddemo.activity;
 
 import android.content.DialogInterface;
+import android.graphics.Color;
 import android.location.Location;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.DividerItemDecoration;
@@ -47,8 +49,14 @@ public class TrackRecordActivity extends BaseActivity implements View.OnClickLis
         if (getSupportActionBar()!=null){
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
-
         setContentView(R.layout.activity_track);
+//        if (Build.VERSION.SDK_INT >= 21) {
+//            View decorView = getWindow().getDecorView();
+//            int option = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+//                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+//            decorView.setSystemUiVisibility(option);
+//            getWindow().setStatusBarColor(Color.TRANSPARENT);
+//        }
         trackDao = new TrackDao(this);
         tracks = trackDao.getAllTracks();
 
@@ -72,7 +80,7 @@ public class TrackRecordActivity extends BaseActivity implements View.OnClickLis
         }
         trackAdapter = new TrackRecyclerAdapter(this);
         trackAdapter.setDataList(tracks);
-        trackRecycler = $(R.id.track_recycler_view);
+        trackRecycler = $(R.id.list_track);
         trackRecycler.setLayoutManager(new LinearLayoutManager(this));
         //如果可以确定每个item的高度是固定的，设置这个选项可以提高性能
         trackRecycler.setHasFixedSize(true);

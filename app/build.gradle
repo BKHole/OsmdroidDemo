@@ -1,5 +1,6 @@
 apply plugin: 'com.android.application'
 
+
 android {
     compileSdkVersion 25
     buildToolsVersion "26.0.0"
@@ -14,8 +15,8 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
-            shrinkResources true
+            minifyEnabled true
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }

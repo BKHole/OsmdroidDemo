@@ -17,13 +17,14 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.CardView;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -33,6 +34,8 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
 
 import com.amap.api.services.core.AMapException;
 import com.amap.api.services.core.LatLonPoint;
@@ -42,8 +45,10 @@ import com.amap.api.services.help.Tip;
 import com.bigemap.osmdroiddemo.R;
 import com.bigemap.osmdroiddemo.TileSource.GoogleMapsTileSource;
 import com.bigemap.osmdroiddemo.TileSource.GoogleSatelliteTileSource;
+import com.bigemap.osmdroiddemo.adapter.MapSourceAdapter;
 import com.bigemap.osmdroiddemo.constants.Constant;
 import com.bigemap.osmdroiddemo.db.TrackDao;
+import com.bigemap.osmdroiddemo.entity.Map;
 import com.bigemap.osmdroiddemo.overlay.MyLocationOverlay;
 import com.bigemap.osmdroiddemo.service.MyLocationService;
 import com.bigemap.osmdroiddemo.utils.AMapUtils;
@@ -88,7 +93,7 @@ import static com.bigemap.osmdroiddemo.constants.Constant.PREFS_ZOOM_LEVEL;
 import static com.bigemap.osmdroiddemo.constants.Constant.PREFS_ZOOM_LEVEL_DOUBLE;
 
 public class MainActivity extends BaseActivity implements View.OnClickListener,
-       Inputtips.InputtipsListener, TextWatcher, AdapterView.OnItemClickListener {
+        Inputtips.InputtipsListener, TextWatcher, AdapterView.OnItemClickListener {
 
     private static final String TAG = "MainActivity";
     public static final String GOOGLE_MAP = "Google Map";
@@ -111,12 +116,19 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     private Button shapeBtn, trackBtn, measureBtn, closeBtn;
     private LinearLayout mainBottomLayout, editToolLayout;
 
+    //搜索框
     private CardView searchCardView;
     private AutoCompleteTextView searchText;
     private ImageButton editTextClearBtn;
     private List<Tip> tips;
 
-    private int selectedTileSource = 0;//默认选中地图值
+    //地图选择
+    private TextView normalMap, satelliteMap;
+    private RecyclerView mapSourceList;//地图源列表
+
+    private ScrollView contentScroll;
+    private ImageView importLayers;
+
     private int clickCount = 1;//用于轨迹记录按钮切换
     private int drawType = 0;//0:画线，1:图形，2:周长和面积，3:导入
     private GeoPoint convertedPoint;
@@ -133,7 +145,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate: ");
-//        supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         if (Build.VERSION.SDK_INT >= 23) {
             checkPermissions();
         }
@@ -175,7 +186,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
 
         if (mapView.getTileProvider().getTileSource().equals(TileSourceFactory.MAPNIK)) {
             myLocationOverlay.setTileSource(Constant.OSM);
-            selectedTileSource = Constant.OSM;
+            dataKeeper.putInt(Constant.PREFS_MAP_SOURCE, Constant.OSM);
         }
 
     }
@@ -192,16 +203,21 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         zoomOutBtn = $(R.id.btn_zoom_out);
         emptyBtn = $(R.id.btn_empty);
         locationBtn = $(R.id.btn_location);
-        mapModeBtn = $(R.id.btn_map_mode);
-        prickLayout=$(R.id.rl_center_prick);
+        prickLayout = $(R.id.rl_center_prick);
         addPointBtn = $(R.id.btn_point_edit);
         trackRecord = $(R.id.btn_track_record);
         track = $(R.id.btn_track);
-        searchText=$(R.id.search_editText);
+        searchText = $(R.id.search_editText);
         searchText.setCursorVisible(false);
-        editTextClearBtn=$(R.id.edit_text_clear);
-        searchCardView=$(R.id.search_box);
-        searchCardView.setCardBackgroundColor(ContextCompat.getColor(this,android.R.color.transparent));
+        editTextClearBtn = $(R.id.edit_text_clear);
+
+        mapModeBtn = $(R.id.btn_map_mode);
+        mapModeBtn.setImageResource(R.drawable.ic_map_google);
+        normalMap = $(R.id.tv_map_type_normal);
+        satelliteMap = $(R.id.tv_map_type_satellite);
+        searchCardView = $(R.id.search_box);
+        searchCardView.setCardBackgroundColor(ContextCompat.getColor(this, R.color.translucent_white_65));
+        mapSourceList = $(R.id.list_map_source);
 
         editToolLayout = $(R.id.layout_main_edit_tool);
         shapeBtn = $(R.id.btn_edit_shape);
@@ -212,6 +228,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         undoBtn = $(R.id.btn_edit_undo);
         prickBtn = $(R.id.btn_edit_prick);
         saveBtn = $(R.id.btn_edit_save);
+
+        contentScroll=$(R.id.scroll_layers_content);
+        importLayers=$(R.id.iv_layers_import);
 
         locationBtn.setOnClickListener(this);
         zoomInBtn.setOnClickListener(this);
@@ -233,14 +252,16 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         searchText.addTextChangedListener(this);
         searchText.setOnItemClickListener(this);
         editTextClearBtn.setOnClickListener(this);
-
+        normalMap.setOnClickListener(this);
+        satelliteMap.setOnClickListener(this);
+        importLayers.setOnClickListener(this);
     }
 
     private void initTileSource() {
         GoogleMapsTileSource googleMapsTileSource = new GoogleMapsTileSource(GOOGLE_MAP, 1, 20, 512, ".png",
                 new String[]{Constant.URL_MAP_GOOGLE});//加载图源
-
         TileSourceFactory.addTileSource(googleMapsTileSource);
+
         GoogleSatelliteTileSource satelliteTileSource = new GoogleSatelliteTileSource(GOOGLE_SATELLITE,
                 1, 20, 512, ".png", new String[]{Constant.URL_MAP_GOOGLE_SATELLITE});
         TileSourceFactory.addTileSource(satelliteTileSource);
@@ -435,6 +456,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         marker.setTitle("坐标：lat=" + point.getLatitude() + ",lng=" + point.getLongitude());
         marker.setFlat(true);//设置marker平贴地图效果
         mapView.getOverlays().add(marker);
+        mapView.invalidate();
     }
 
     private void setPoint(GeoPoint point, String title) {
@@ -457,21 +479,21 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         polyline.setColor(R.color.colorAccent);
         polyline.setPoints(points);
         mapView.getOverlays().add(polyline);
+        mapView.invalidate();
     }
 
     /**
      * 面
-     *
      * @param points
      */
     private void setPolygon(List<GeoPoint> points) {
         polygon = new Polygon();
         polygon.setStrokeWidth(5);
-
         polygon.setStrokeColor(R.color.colorAccent);
         polygon.setFillColor(R.color.colorPrimary);
         polygon.setPoints(points);
         mapView.getOverlays().add(polygon);
+        mapView.invalidate();
     }
 
     @Override
@@ -502,7 +524,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     @Override
     public void onGetInputtips(List<Tip> tipList, int rCode) {
         if (rCode == AMapException.CODE_AMAP_SUCCESS) {// 正确返回
-            tips=tipList;
+            tips = tipList;
             List<String> listString = new ArrayList<>();
             for (int i = 0; i < tipList.size(); i++) {
                 listString.add(tipList.get(i).getName());
@@ -513,16 +535,16 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
             searchText.setAdapter(aAdapter);
             aAdapter.notifyDataSetChanged();
         } else {
-           toastUtils.showToast(rCode);
+            toastUtils.showToast(rCode);
         }
     }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        Tip tip=tips.get(position);
-        if (tip.getPoint()!=null){
-            LatLonPoint sharePoint=tip.getPoint();//gps坐标
-            GeoPoint searchPoint=PositionUtils.gps84_To_Gcj02(new GeoPoint(sharePoint.getLatitude(),sharePoint.getLongitude()));
+        Tip tip = tips.get(position);
+        if (tip.getPoint() != null) {
+            LatLonPoint sharePoint = tip.getPoint();//gps坐标
+            GeoPoint searchPoint = PositionUtils.gps84_To_Gcj02(new GeoPoint(sharePoint.getLatitude(), sharePoint.getLongitude()));
             mapView.getController().animateTo(searchPoint);
             setPoint(searchPoint, tip.getName());
         }
@@ -531,7 +553,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     //隐藏软键盘和编辑框光标
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (this.getCurrentFocus()!=null){
+        if (this.getCurrentFocus() != null) {
             hideKeyboard();
         }
         return super.onTouchEvent(event);
@@ -555,30 +577,14 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         }
         switch (v.getId()) {
             case R.id.btn_location://定位
-                switch (selectedTileSource) {
-                    case Constant.GOOGLE_MAP:
-                    case Constant.GOOGLE_SATELLITE:
-                        if (permissionUtils.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
-                            if(myLocationOverlay.getMyLocation()!=null){
-                                mapView.getController().animateTo(myLocationOverlay.getMyLocation());
-                            }else{
-                                showMissingPermissionDialog();
-                            }
-                        }else{
-                            checkPermissions();
-                        }
-                        break;
-                    case Constant.OSM:
-                        if (permissionUtils.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
-                            if(myLocationOverlay.getMyLocation()!=null){
-                                mapView.getController().animateTo(PositionUtils.gcj_To_Gps84(myLocationOverlay.getMyLocation()));
-                            }else{
-                                showMissingPermissionDialog();
-                            }
-                        }else{
-                            checkPermissions();
-                        }
-                        break;
+                if (permissionUtils.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    if (myLocationOverlay.getMyLocation() != null) {
+                        mapView.getController().animateTo(myLocationOverlay.getMyLocation());
+                    } else {
+                        showMissingPermissionDialog();
+                    }
+                } else {
+                    checkPermissions();
                 }
                 break;
             case R.id.btn_zoom_in://放大
@@ -593,9 +599,17 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                 mapView.getOverlays().add(mScaleBarOverlay);
 //                mapView.getOverlays().add(mCompassOverlay);
                 mapView.getOverlays().add(myLocationOverlay);
+                mapView.invalidate();
                 break;
             case R.id.btn_map_mode://地图切换
-                createMapModeView();
+                if (clickCount % 2 != 0) {
+                    showMapSource();
+                    showMapType();
+                } else {
+                    hideMapSource();
+                    hideMapType();
+                }
+                clickCount++;
                 break;
             case R.id.btn_point_edit://开始绘制轨迹
                 editToolLayout.setVisibility(View.VISIBLE);
@@ -661,25 +675,25 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                 points.clear();
                 drawType = 1;
                 saveBtn.setVisibility(View.VISIBLE);
-                shapeBtn.setBackgroundColor(ContextCompat.getColor(this,R.color.colorPrimary));
-                trackBtn.setBackgroundColor(ContextCompat.getColor(this,R.color.colorAccent));
-                measureBtn.setBackgroundColor(ContextCompat.getColor(this,R.color.colorAccent));
+                shapeBtn.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary));
+                trackBtn.setBackgroundColor(ContextCompat.getColor(this, R.color.colorAccent));
+                measureBtn.setBackgroundColor(ContextCompat.getColor(this, R.color.colorAccent));
                 break;
             case R.id.btn_edit_track://轨迹
                 points.clear();
                 drawType = 0;
                 saveBtn.setVisibility(View.VISIBLE);
-                shapeBtn.setBackgroundColor(ContextCompat.getColor(this,R.color.colorAccent));
-                trackBtn.setBackgroundColor(ContextCompat.getColor(this,R.color.colorPrimary));
-                measureBtn.setBackgroundColor(ContextCompat.getColor(this,R.color.colorAccent));
+                shapeBtn.setBackgroundColor(ContextCompat.getColor(this, R.color.colorAccent));
+                trackBtn.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary));
+                measureBtn.setBackgroundColor(ContextCompat.getColor(this, R.color.colorAccent));
                 break;
             case R.id.btn_edit_measure://周长和面积
                 points.clear();
                 drawType = 2;
                 saveBtn.setVisibility(View.GONE);
-                shapeBtn.setBackgroundColor(ContextCompat.getColor(this,R.color.colorAccent));
-                trackBtn.setBackgroundColor(ContextCompat.getColor(this,R.color.colorAccent));
-                measureBtn.setBackgroundColor(ContextCompat.getColor(this,R.color.colorPrimary));
+                shapeBtn.setBackgroundColor(ContextCompat.getColor(this, R.color.colorAccent));
+                trackBtn.setBackgroundColor(ContextCompat.getColor(this, R.color.colorAccent));
+                measureBtn.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary));
                 break;
             case R.id.btn_edit_close://关闭轨迹绘制
                 myLocationOverlay.setOrientationProvider(new InternalCompassOrientationProvider(this));
@@ -698,7 +712,28 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                 searchText.setCursorVisible(true);
                 searchCardView.setCardBackgroundColor(ContextCompat.getColor(this, android.R.color.white));
                 break;
-
+            case R.id.tv_map_type_normal://点击地图类型
+                normalMap.setSelected(true);
+                satelliteMap.setSelected(false);
+                dataKeeper.put(Constant.PREFS_NORMAL_MAP_STATE, true);
+                dataKeeper.put(Constant.PREFS_SATELLITE_STATE, false);
+                showMapView();
+                break;
+            case R.id.tv_map_type_satellite://点击卫星地图
+                normalMap.setSelected(false);
+                satelliteMap.setSelected(true);
+                dataKeeper.put(Constant.PREFS_NORMAL_MAP_STATE, false);
+                dataKeeper.put(Constant.PREFS_SATELLITE_STATE, true);
+                showMapView();
+                break;
+            case R.id.iv_layers_import:
+                if (clickCount %2 !=0){
+                    contentScroll.setVisibility(View.VISIBLE);
+                }else{
+                    contentScroll.setVisibility(View.GONE);
+                }
+                clickCount++;
+                break;
         }
     }
 
@@ -730,48 +765,91 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         }
     }
 
-    //地图种类选择项
-    private void createMapModeView() {
-        // 创建数据
-        final String[] items = new String[]{GOOGLE_MAP, GOOGLE_SATELLITE, OSM};
-        // 创建对话框构建器
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        // 设置参数
-        builder.setTitle("地图种类")
-                .setSingleChoiceItems(items, selectedTileSource, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        switch (which) {
-                            case Constant.GOOGLE_MAP://GOOGLE_MAP
-                                if (TileSourceFactory.containsTileSource(GOOGLE_MAP)) {
-                                    mapView.setTileSource(TileSourceFactory.getTileSource(GOOGLE_MAP));
-                                    myLocationOverlay.setTileSource(Constant.GOOGLE_MAP);
-                                }
-                                break;
-                            case Constant.GOOGLE_SATELLITE://GOOGLE_SATELLITE
-                                if (TileSourceFactory.containsTileSource(GOOGLE_SATELLITE)) {
-                                    mapView.setTileSource(TileSourceFactory.getTileSource(GOOGLE_SATELLITE));
-                                    myLocationOverlay.setTileSource(Constant.GOOGLE_SATELLITE);
-                                }
-                                break;
-                            case Constant.OSM://OSM
-                                mapView.setTileSource(TileSourceFactory.MAPNIK);
-                                myLocationOverlay.setTileSource(Constant.OSM);
-                                break;
-                        }
-                        selectedTileSource = which;
-                        dialog.dismiss();
-                    }
-                });
-        builder.create().show();
+    /**
+     * 显示地图
+     */
+    private void showMapView() {
+        int mapSource = dataKeeper.getInt(Constant.PREFS_MAP_SOURCE, 0);
+        boolean mapState = dataKeeper.get(Constant.PREFS_NORMAL_MAP_STATE, true);
+        if (mapSource == Constant.GOOGLE_MAP) {
+            if (mapState) {
+                mapView.setTileSource(TileSourceFactory.getTileSource(GOOGLE_MAP));
+                myLocationOverlay.setTileSource(Constant.GOOGLE_MAP);
+            } else {
+                mapView.setTileSource(TileSourceFactory.getTileSource(GOOGLE_SATELLITE));
+                myLocationOverlay.setTileSource(Constant.GOOGLE_MAP);
+            }
+        } else if (mapSource == Constant.OSM) {
+            mapView.setTileSource(TileSourceFactory.MAPNIK);
+            myLocationOverlay.setTileSource(Constant.OSM);
+        }
     }
 
-    private void hideKeyboard(){
+    /**
+     * 显示地图类型
+     */
+    private void showMapType() {
+        normalMap.setVisibility(View.VISIBLE);
+        satelliteMap.setVisibility(View.VISIBLE);
+        boolean normal = dataKeeper.get(Constant.PREFS_NORMAL_MAP_STATE, true);
+        boolean satellite = dataKeeper.get(Constant.PREFS_SATELLITE_STATE, false);
+        normalMap.setSelected(normal);
+        satelliteMap.setSelected(satellite);
+    }
+
+    /**
+     * 显示地图源
+     */
+    private void showMapSource() {
+        mapSourceList.setVisibility(View.VISIBLE);
+        mapSourceList.setLayoutManager(new GridLayoutManager(this, 2));
+        //如果可以确定每个item的高度是固定的，设置这个选项可以提高性能
+        mapSourceList.setHasFixedSize(true);
+
+        List<Map> maps = new ArrayList<>();
+        maps.add(new Map(R.drawable.ic_map_google, "谷歌"));
+        maps.add(new Map(R.drawable.ic_map_osm, "OSM"));
+        maps.add(new Map(R.drawable.ic_map_amap, "高德"));
+        maps.add(new Map(R.drawable.ic_map_baidu, "百度"));
+
+        final MapSourceAdapter adapter = new MapSourceAdapter(this);
+        adapter.setDataList(maps);
+        mapSourceList.setAdapter(adapter);
+        int SelectedMapSource = dataKeeper.getInt(Constant.PREFS_MAP_SOURCE, 0);
+        adapter.setItemSelected(SelectedMapSource);
+        adapter.setOnItemListener(new MapSourceAdapter.OnItemListener() {
+            @Override
+            public void onClick(View v, int pos, Object data) {
+                Map map= (Map) data;
+                mapModeBtn.setImageResource(map.getMapIcon());
+                adapter.setItemSelected(pos);
+                dataKeeper.putInt(Constant.PREFS_MAP_SOURCE, pos);
+                showMapView();
+            }
+        });
+    }
+
+    /**
+     * 隐藏键盘
+     */
+    private void hideKeyboard() {
         searchText.setCursorVisible(false);
         searchCardView.setCardBackgroundColor(ContextCompat.getColor(this, R.color.translucent_white_65));
-        InputMethodManager inputMethodManager = (InputMethodManager)this
+        InputMethodManager inputMethodManager = (InputMethodManager) this
                 .getSystemService(Context.INPUT_METHOD_SERVICE);
         inputMethodManager.hideSoftInputFromWindow(searchText.getWindowToken(), 0);
+    }
+
+    /**
+     * 隐藏地图选择
+     */
+    private void hideMapSource() {
+        mapSourceList.setVisibility(View.GONE);
+    }
+
+    private void hideMapType() {
+        normalMap.setVisibility(View.GONE);
+        satelliteMap.setVisibility(View.GONE);
     }
 
     // 获取广播数据
@@ -795,10 +873,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
 
     // 显示缺失权限提示
     private void showMissingPermissionDialog() {
-
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         final AlertDialog alertDialog = builder.create();
-
         builder.setMessage("当前应用缺少必要权限。\n\n请进入\"位置信息\"选择\"高精确度\"。\n\n最后点击两次后退按钮，即可返回。");
         // 拒绝, 退出应用
         builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
@@ -807,14 +883,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                 alertDialog.dismiss();
             }
         });
-
         builder.setPositiveButton("设置", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 startAppSettings();
             }
         });
-
         builder.show();
     }
 
@@ -824,6 +898,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         ComponentName comp = new ComponentName("com.android.settings", "com.android.settings.Settings");
         intent.setComponent(comp);
         intent.setAction("android.intent.action.VIEW");
-        startActivityForResult( intent , 0);
+        startActivityForResult(intent, 0);
     }
+
 }

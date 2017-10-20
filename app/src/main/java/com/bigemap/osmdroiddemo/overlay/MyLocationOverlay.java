@@ -629,7 +629,6 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
         Location convertedLocation = null;
         switch (mTileSource) {
             case Constant.GOOGLE_MAP:
-            case Constant.GOOGLE_SATELLITE:
                 convertedLocation = PositionUtils.gps_To_Gcj02(originLocation);
                 break;
             case Constant.OSM:

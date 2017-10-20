@@ -6,5 +6,6 @@
     <color name="white">#FFFFFF</color><!--白色 -->
     <color name="darkgrey">#a9a9a9</color><!--暗灰色 -->
     <color name="translucent_white_65">#59ffffff</color><!--半透明 -->
+    <color name="translucent_white_40">#99ffffff</color>
     <!-- 灰色 -->
 </resources>

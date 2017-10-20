@@ -10,6 +10,7 @@ import android.os.Environment;
 public class Constant {
     public static final String PREFS_NAME = "com.bigemap.prefs";
     public static final String PREFS_TILE_SOURCE = "tilesource";
+    public static final String PREFS_MAP_SOURCE = "mapsource";
     /**
      * as String because we cannot use double in Preferences, only float
      * and float is not accurate enough
@@ -20,7 +21,8 @@ public class Constant {
     public static final String PREFS_ZOOM_LEVEL = "zoomLevel";
     public static final String PREFS_ZOOM_LEVEL_DOUBLE = "zoomLevelDouble";
     public static final String PREFS_SHOW_LOCATION = "showLocation";
-    public static final String PREFS_SHOW_COMPASS = "showCompass";
+    public static final String PREFS_NORMAL_MAP_STATE = "normalMapState";
+    public static final String PREFS_SATELLITE_STATE = "satelliteState";
     /**
      * map source url
      * m:路线图（r）
@@ -37,7 +39,7 @@ public class Constant {
      */
     public static final int GOOGLE_MAP = 0;//GOOGLE_MAP
     public static final int GOOGLE_SATELLITE = 1;//GOOGLE_SATELLITE
-    public static final int OSM = 2;//OSM
+    public static final int OSM = 1;//OSM
 
     /**
      * file storage path

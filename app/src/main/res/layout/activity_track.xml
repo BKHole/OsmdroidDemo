@@ -4,7 +4,7 @@
     android:layout_height="match_parent">
 
     <android.support.v7.widget.RecyclerView
-        android:id="@+id/track_recycler_view"
+        android:id="@+id/list_track"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 

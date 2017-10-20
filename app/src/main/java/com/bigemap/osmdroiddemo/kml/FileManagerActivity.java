@@ -63,7 +63,7 @@ public class FileManagerActivity extends AppCompatActivity {
 
     private void initView() {
         path_edit = (TextView) findViewById(R.id.tv_file_manager_path);
-        showFileRecycler = (RecyclerView) findViewById(R.id.file_manager_recycler_view);
+        showFileRecycler = (RecyclerView) findViewById(R.id.list_file_manager);
         adapter = new FileRecyclerAdapter(this);
         showFileRecycler.setLayoutManager(new LinearLayoutManager(this));
         //如果可以确定每个item的高度是固定的，设置这个选项可以提高性能
