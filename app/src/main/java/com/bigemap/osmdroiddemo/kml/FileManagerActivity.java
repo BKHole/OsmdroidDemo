@@ -17,8 +17,9 @@ import com.bigemap.osmdroiddemo.R;
 import com.bigemap.osmdroiddemo.activity.TrackRecordActivity;
 import com.bigemap.osmdroiddemo.adapter.FileRecyclerAdapter;
 import com.bigemap.osmdroiddemo.constants.Constant;
-import com.bigemap.osmdroiddemo.db.TrackDao;
 import com.bigemap.osmdroiddemo.entity.Coordinate;
+import com.bigemap.osmdroiddemo.entity.Location;
+import com.bigemap.osmdroiddemo.entity.Track;
 import com.bigemap.osmdroiddemo.utils.DateUtils;
 import com.bigemap.osmdroiddemo.utils.FileUtils;
 import com.bigemap.osmdroiddemo.utils.UIUtils;
@@ -42,7 +43,6 @@ public class FileManagerActivity extends AppCompatActivity {
     private FileRecyclerAdapter adapter;
     private ReadKml readKml;
     private ArrayList<Coordinate> coordinates;
-    private TrackDao trackDao;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,7 +56,6 @@ public class FileManagerActivity extends AppCompatActivity {
         paths = new ArrayList<>();
         sizes = new ArrayList<>();
         readKml = new ReadKml();
-        trackDao=new TrackDao(this);
         initView();
         initEvent();
     }
@@ -94,9 +93,21 @@ public class FileManagerActivity extends AppCompatActivity {
                         for (Coordinate coordinate: coordinates){
                             geoPoints.add(new GeoPoint(coordinate.getLatitude(), coordinate.getLongitude()));
                         }
+                        Track track=new Track();
                         String time= DateUtils.formatUTC(System.currentTimeMillis(), null);
+                        track.setName(file.getName());
+                        track.setStartTime(time);
+                        track.setTrackSource(2);
+                        track.setTrackType(3);
                         if (coordinates.size()>0){
-                            trackDao.insertTrack(file.getName(),null,time,geoPoints,"import",3);
+                            for (GeoPoint geoPoint: geoPoints){
+                                Location location=new Location();
+                                location.setLatitude(String.valueOf(geoPoint.getLatitude()));
+                                location.setLongitude(String.valueOf(geoPoint.getLongitude()));
+                                location.save();
+                                track.getLocations().add(location);
+                            }
+                            track.save();
                             Intent intent = new Intent();
                             intent.setClass(FileManagerActivity.this, TrackRecordActivity.class);
                             startActivity(intent);

@@ -1,9 +1,6 @@
 package com.bigemap.osmdroiddemo.activity;
 
 import android.content.DialogInterface;
-import android.graphics.Color;
-import android.location.Location;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.DividerItemDecoration;
@@ -19,13 +16,15 @@ import android.widget.TextView;
 import com.bigemap.osmdroiddemo.R;
 import com.bigemap.osmdroiddemo.adapter.TrackRecyclerAdapter;
 import com.bigemap.osmdroiddemo.constants.Constant;
-import com.bigemap.osmdroiddemo.db.TrackDao;
 import com.bigemap.osmdroiddemo.entity.Coordinate;
+import com.bigemap.osmdroiddemo.entity.Location;
 import com.bigemap.osmdroiddemo.entity.Track;
 import com.bigemap.osmdroiddemo.kml.WriteKml;
 import com.bigemap.osmdroiddemo.utils.UIUtils;
 import com.bigemap.osmdroiddemo.viewholder.OnViewClickListener;
 import com.bigemap.osmdroiddemo.viewholder.OnViewLongClickListener;
+
+import org.litepal.crud.DataSupport;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -36,7 +35,6 @@ public class TrackRecordActivity extends BaseActivity implements View.OnClickLis
     private static final String TAG = "TrackActivity";
     private RecyclerView trackRecycler;
     private TrackRecyclerAdapter trackAdapter;
-    private TrackDao trackDao;
     private List<Track> tracks;
     private long trackID;
     private TextView noDataTv;
@@ -57,21 +55,17 @@ public class TrackRecordActivity extends BaseActivity implements View.OnClickLis
 //            decorView.setSystemUiVisibility(option);
 //            getWindow().setStatusBarColor(Color.TRANSPARENT);
 //        }
-        trackDao = new TrackDao(this);
-        tracks = trackDao.getAllTracks();
 
         initView();
         initData();
+        initEvent();
     }
 
     private void initView(){
         TextView clearAll=$(R.id.clear_all);
         noDataTv = $(R.id.tv_no_data);
-        isDataNull();
         clearAll.setOnClickListener(this);
     }
-
-
 
     private void initData() {
         File file=new File(Constant.EXPORT_KML_PATH);
@@ -79,7 +73,6 @@ public class TrackRecordActivity extends BaseActivity implements View.OnClickLis
             file.mkdirs();
         }
         trackAdapter = new TrackRecyclerAdapter(this);
-        trackAdapter.setDataList(tracks);
         trackRecycler = $(R.id.list_track);
         trackRecycler.setLayoutManager(new LinearLayoutManager(this));
         //如果可以确定每个item的高度是固定的，设置这个选项可以提高性能
@@ -87,11 +80,14 @@ public class TrackRecordActivity extends BaseActivity implements View.OnClickLis
         trackRecycler.addItemDecoration(new DividerItemDecoration(
                 this, DividerItemDecoration.VERTICAL));
         trackRecycler.setAdapter(trackAdapter);
+    }
+
+    private void initEvent(){
         trackAdapter.setOnViewClickListener(new OnViewClickListener() {
             @Override
             public void onClick(View v, Object data) {
                 Track track= (Track) data;
-                trackID=track.getTrackid();
+                trackID=track.getId();
                 UIUtils.showTrackEditActivity(TrackRecordActivity.this, trackID);
                 Log.d(TAG, "onItemClick: trackID="+trackID);
             }
@@ -100,7 +96,7 @@ public class TrackRecordActivity extends BaseActivity implements View.OnClickLis
             @Override
             public void onLongClick(View v, Object data) {
                 Track track= (Track) data;
-                trackID=track.getTrackid();
+                trackID=track.getId();
                 popUpDialog(trackID);
                 Log.d(TAG, "onLongClick: test");
             }
@@ -124,7 +120,7 @@ public class TrackRecordActivity extends BaseActivity implements View.OnClickLis
                             case 0:
                                 try {
                                     List<Coordinate> coordinates=new ArrayList<>();
-                                    Track track=trackDao.getTrack(trackID);
+                                    Track track=DataSupport.find(Track.class,trackID);
                                     Log.d(TAG, "onClick: trackType="+track.getTrackType());
                                     switch (track.getTrackType()){
                                         case 0://line
@@ -133,20 +129,20 @@ public class TrackRecordActivity extends BaseActivity implements View.OnClickLis
                                         case 1://polygon
                                             type="polygon";
                                     }
-                                    ArrayList<Location> points=trackDao.getTrackPoints(trackID);
+                                    List<Location> points=DataSupport.findAll(Location.class,trackID);
                                     for (Location location: points){
-                                        Coordinate coordinate=new Coordinate(location.getLongitude()
-                                                ,location.getLatitude(), track.getName());
+                                        Coordinate coordinate=new Coordinate(Double.valueOf(location.getLongitude())
+                                                ,Double.valueOf(location.getLatitude()), track.getName());
                                         coordinates.add(coordinate);
                                     }
-                                    writeKml.createKml(type+"_"+track.getTrackid(),coordinates,type);
+                                    writeKml.createKml(type+"_"+track.getId(),coordinates,type);
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
                                 break;
                             case 1:
-                                trackDao.deleteTrack(trackID);
-                                tracks = trackDao.getAllTracks();
+                                DataSupport.delete(Track.class,trackID);
+                                tracks = DataSupport.findAll(Track.class);
                                 trackAdapter.setDataList(tracks);
                                 isDataNull();
                                 break;
@@ -165,6 +161,9 @@ public class TrackRecordActivity extends BaseActivity implements View.OnClickLis
     @Override
     protected void onResume() {
         super.onResume();
+        tracks = DataSupport.findAll(Track.class);
+        trackAdapter.setDataList(tracks);
+        isDataNull();
         Log.d(TAG, "onResume: ");
     }
 
@@ -210,7 +209,7 @@ public class TrackRecordActivity extends BaseActivity implements View.OnClickLis
     public void onClick(View v) {
         switch (v.getId()){
             case R.id.clear_all:
-                trackDao.clearAll();
+                DataSupport.deleteAll(Track.class);
                 trackAdapter.clearAllData();
                 noDataTv.setVisibility(View.VISIBLE);
                 toastUtils.showSingletonToast("清除成功");
@@ -224,6 +223,8 @@ public class TrackRecordActivity extends BaseActivity implements View.OnClickLis
     private void isDataNull() {
         if (tracks.size()==0){
             noDataTv.setVisibility(View.VISIBLE);
+        }else{
+            noDataTv.setVisibility(View.GONE);
         }
     }
 }

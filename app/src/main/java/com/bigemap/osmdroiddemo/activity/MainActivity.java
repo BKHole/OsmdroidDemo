@@ -9,10 +9,10 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
-import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
@@ -34,7 +34,6 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.amap.api.services.core.AMapException;
@@ -47,8 +46,9 @@ import com.bigemap.osmdroiddemo.TileSource.GoogleMapsTileSource;
 import com.bigemap.osmdroiddemo.TileSource.GoogleSatelliteTileSource;
 import com.bigemap.osmdroiddemo.adapter.MapSourceAdapter;
 import com.bigemap.osmdroiddemo.constants.Constant;
-import com.bigemap.osmdroiddemo.db.TrackDao;
+import com.bigemap.osmdroiddemo.entity.Location;
 import com.bigemap.osmdroiddemo.entity.Map;
+import com.bigemap.osmdroiddemo.entity.Track;
 import com.bigemap.osmdroiddemo.overlay.MyLocationOverlay;
 import com.bigemap.osmdroiddemo.service.MyLocationService;
 import com.bigemap.osmdroiddemo.utils.AMapUtils;
@@ -58,6 +58,7 @@ import com.bigemap.osmdroiddemo.utils.PermissionUtils;
 import com.bigemap.osmdroiddemo.utils.PositionUtils;
 import com.bigemap.osmdroiddemo.utils.UIUtils;
 
+import org.litepal.crud.DataSupport;
 import org.osmdroid.tileprovider.tilesource.ITileSource;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.BoundingBox;
@@ -125,21 +126,21 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     //地图选择
     private TextView normalMap, satelliteMap;
     private RecyclerView mapSourceList;//地图源列表
+    private boolean isMapChanged=true;
 
-    private ScrollView contentScroll;
-    private ImageView importLayers;
+//    private ScrollView contentScroll;
+//    private ImageView importLayers;
+//    private boolean isExpanded=true;
 
-    private int clickCount = 1;//用于轨迹记录按钮切换
+    private boolean isRecord = true;//用于轨迹记录按钮切换
     private int drawType = 0;//0:画线，1:图形，2:周长和面积，3:导入
     private GeoPoint convertedPoint;
-    private ArrayList<GeoPoint> points;
-    private ArrayList<Location> locationList;
-    private TrackDao trackDao;
+    private List<GeoPoint> points;
+    private List<GeoPoint> locationList;
     private MyReceiver myReceiver;
     private int zoomLevel;
     private Polyline polyline;
     private Polygon polygon;
-    private PermissionUtils permissionUtils;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -194,8 +195,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     private void initData() {
         points = new ArrayList<>();
         locationList = new ArrayList<>();
-        trackDao = new TrackDao(this);
-        permissionUtils = new PermissionUtils(this);
     }
 
     private void initView() {
@@ -229,8 +228,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         prickBtn = $(R.id.btn_edit_prick);
         saveBtn = $(R.id.btn_edit_save);
 
-        contentScroll=$(R.id.scroll_layers_content);
-        importLayers=$(R.id.iv_layers_import);
+//        contentScroll = $(R.id.scroll_layers_content);
+//        importLayers = $(R.id.iv_layers_import);
 
         locationBtn.setOnClickListener(this);
         zoomInBtn.setOnClickListener(this);
@@ -254,7 +253,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         editTextClearBtn.setOnClickListener(this);
         normalMap.setOnClickListener(this);
         satelliteMap.setOnClickListener(this);
-        importLayers.setOnClickListener(this);
+//        importLayers.setOnClickListener(this);
     }
 
     private void initTileSource() {
@@ -278,7 +277,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
 
     /**
      * 判断程序是否第一次启动
-     *
      * @return boolean
      */
     private boolean isFirstStart() {
@@ -294,13 +292,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
 
     /**
      * 统计次数
-     *
      * @param type
      */
-
     private void postUrl(String type) {
         OkHttpClient mOkHttpClient = new OkHttpClient();
-        if (permissionUtils.checkPermission(Manifest.permission.READ_PHONE_STATE)) {
+        if (PermissionUtils.checkPhoneStatePermission(this)) {
             TelephonyManager telManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
             String imei = telManager.getDeviceId();
             RequestBody requestBodyPost = new FormBody.Builder()
@@ -342,6 +338,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         zoomLevel = dataKeeper.getInt(PREFS_ZOOM_LEVEL_DOUBLE, dataKeeper.getInt(PREFS_ZOOM_LEVEL, 10));
         mapView.getController().setZoom(zoomLevel);
         myLocationOverlay.enableMyLocation();
+        myLocationOverlay.setOrientationProvider(new InternalCompassOrientationProvider(this));
         myLocationOverlay.enableCompass();
         mScaleBarOverlay.enableScaleBar();
         //判断程序是否第一次启动
@@ -365,10 +362,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
 
         long trackId = getIntent().getLongExtra("trackId", -1);
         if (trackId > -1) {
-            ArrayList<Location> locations = trackDao.getTrackPoints(trackId);
+            List<Location> locations = DataSupport.findAll(Location.class, trackId);
             ArrayList<GeoPoint> geoPoints = new ArrayList<>();
             for (Location location : locations) {
-                geoPoints.add(new GeoPoint(location));
+                geoPoints.add(new GeoPoint(Double.valueOf(location.getLatitude()), Double.valueOf(location.getLongitude())));
             }
             setPolyline(geoPoints);
             final BoundingBox boundingBox = BoundingBox.fromGeoPoints(geoPoints);
@@ -400,11 +397,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     protected void onDestroy() {
 //        postUrl("logout");
         super.onDestroy();
+        if (myReceiver!=null){
+            unregisterReceiver(myReceiver);
+        }
         Log.d(TAG, "onDestroy: ");
     }
 
     // START PERMISSION CHECK
-
     private final int REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS = 124;
     private final int REQUEST_CODE_ASK_LOCATION_PERMISSIONS = 123;
 
@@ -423,10 +422,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
             case REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS:
-                if (permissionUtils.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
+                if (PermissionUtils.checkLocationPermission(this)) {
                     myLocationOverlay.runOnFirstFix(new Runnable() {
                         @Override
                         public void run() {
@@ -446,6 +445,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
 
     /**
      * 点
+     *
      * @param point
      */
     private void setRoundPoint(GeoPoint point) {
@@ -484,6 +484,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
 
     /**
      * 面
+     *
      * @param points
      */
     private void setPolygon(List<GeoPoint> points) {
@@ -555,6 +556,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     public boolean onTouchEvent(MotionEvent event) {
         if (this.getCurrentFocus() != null) {
             hideKeyboard();
+            hideMapSource();
+            hideMapType();
         }
         return super.onTouchEvent(event);
     }
@@ -577,7 +580,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         }
         switch (v.getId()) {
             case R.id.btn_location://定位
-                if (permissionUtils.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
+                if (PermissionUtils.checkLocationPermission(this)) {
                     if (myLocationOverlay.getMyLocation() != null) {
                         mapView.getController().animateTo(myLocationOverlay.getMyLocation());
                     } else {
@@ -602,14 +605,15 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                 mapView.invalidate();
                 break;
             case R.id.btn_map_mode://地图切换
-                if (clickCount % 2 != 0) {
+                if (isMapChanged) {
+                    isMapChanged=false;
                     showMapSource();
                     showMapType();
                 } else {
+                    isMapChanged=true;
                     hideMapSource();
                     hideMapType();
                 }
-                clickCount++;
                 break;
             case R.id.btn_point_edit://开始绘制轨迹
                 editToolLayout.setVisibility(View.VISIBLE);
@@ -621,7 +625,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                 break;
             case R.id.btn_track_record://轨迹记录
                 startTime = DateUtils.formatUTC(System.currentTimeMillis(), null);
-                if (clickCount % 2 != 0) {
+                if (isRecord) {
+                    isRecord=false;
                     locationList.clear();
                     trackRecord.setImageResource(R.drawable.ic_vector_pause);
                     toastUtils.showToast("开始记录轨迹");
@@ -631,18 +636,20 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                     IntentFilter filter = new IntentFilter();
                     filter.addAction("com.bigemap.osmdroiddemo.service.intent.locationList");
                     registerReceiver(myReceiver, filter);
+                    myLocationOverlay.enableFollowLocation();
                 } else {
+                    isRecord=true;
                     trackRecord.setImageResource(R.drawable.ic_vector_play);
                     stopService(new Intent(this, MyLocationService.class));
                     if (locationList.size() > 1) {
                         toastUtils.showToast("停止记录轨迹");
-                        trackDao.addTrack(name, null, startTime, locationList, "gps", 0);
                     } else {
                         toastUtils.showToast("此次轨迹路线太短，不作记录");
                     }
                     unregisterReceiver(myReceiver);
+                    myLocationOverlay.disableFollowLocation();
+                    saveTrack(startTime, name, locationList);
                 }
-                clickCount++;
                 break;
             case R.id.btn_track://查看轨迹记录
                 UIUtils.showTrackActivity(MainActivity.this);
@@ -663,7 +670,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
             case R.id.btn_edit_save://保存轨迹并跳转编辑
                 startTime = DateUtils.formatUTC(System.currentTimeMillis(), null);
                 if (points.size() > 1) {
-                    long trackId = trackDao.insertTrack(name, null, startTime, points, "custom", drawType);
+                    Track track = saveTrack(startTime, name, points);
+                    int trackId=track.getId();
                     UIUtils.showTrackEditActivity(MainActivity.this, trackId);
                     Log.d(TAG, "trackId=" + trackId);
                 } else {
@@ -726,21 +734,46 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                 dataKeeper.put(Constant.PREFS_SATELLITE_STATE, true);
                 showMapView();
                 break;
-            case R.id.iv_layers_import:
-                if (clickCount %2 !=0){
-                    contentScroll.setVisibility(View.VISIBLE);
-                }else{
-                    contentScroll.setVisibility(View.GONE);
-                }
-                clickCount++;
-                break;
+//            case R.id.iv_layers_import:
+//                if (isExpanded) {
+//                    isExpanded=false;
+//                    contentScroll.setVisibility(View.VISIBLE);
+//                } else {
+//                    isExpanded=true;
+//                    contentScroll.setVisibility(View.GONE);
+//                }
+//                break;
         }
+    }
+
+    /**
+     * 保存轨迹
+     * @param startTime 开始时间
+     * @param name 轨迹名称
+     * @param geoPoints 轨迹点
+     * @return
+     */
+    private Track saveTrack(String startTime, String name, List<GeoPoint> geoPoints) {
+        Track track = new Track();
+        for (GeoPoint geoPoint : geoPoints) {
+            Location point = new Location();
+            point.setLatitude(String.valueOf(geoPoint.getLatitude()));
+            point.setLongitude(String.valueOf(geoPoint.getLongitude()));
+            point.save();
+            track.getLocations().add(point);
+        }
+        track.setName(name);
+        track.setStartTime(startTime);
+        track.setTrackSource(1);
+        track.setTrackType(drawType);
+        track.save();
+        return track;
     }
 
     /**
      * 绘制轨迹
      */
-    private void drawTrack(ArrayList<GeoPoint> geoPoints) {
+    private void drawTrack(List<GeoPoint> geoPoints) {
         switch (drawType) {
             case 0://画线
                 mapView.getOverlays().remove(polyline);
@@ -820,7 +853,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         adapter.setOnItemListener(new MapSourceAdapter.OnItemListener() {
             @Override
             public void onClick(View v, int pos, Object data) {
-                Map map= (Map) data;
+                Map map = (Map) data;
                 mapModeBtn.setImageResource(map.getMapIcon());
                 adapter.setItemSelected(pos);
                 dataKeeper.putInt(Constant.PREFS_MAP_SOURCE, pos);
@@ -859,14 +892,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         @Override
         public void onReceive(Context context, Intent intent) {
             Bundle bundle = intent.getExtras();
-            locationList = (ArrayList<Location>) bundle.getSerializable("saveGps");
-            ArrayList<GeoPoint> points = new ArrayList<>();
-            for (Location geoPoint : locationList) {
-                points.add(new GeoPoint(geoPoint));
-            }
-            if (points.size() > 1) {
+            locationList = bundle.getParcelableArrayList("saveGps");
+            if (locationList.size() > 1) {
                 mapView.getOverlays().remove(polyline);
-                setPolyline(points);
+                setPolyline(locationList);
             }
         }
     }

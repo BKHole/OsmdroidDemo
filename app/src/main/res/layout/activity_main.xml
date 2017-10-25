@@ -55,6 +55,7 @@
 
         <android.support.v7.widget.RecyclerView
             android:id="@+id/list_map_source"
+            android:background="@color/bg_map_source"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:visibility="gone" />
@@ -75,7 +76,8 @@
         android:layout_width="120dp"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
-        android:animateLayoutChanges="true">
+        android:animateLayoutChanges="true"
+        android:visibility="gone">
 
         <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
             android:id="@+id/scroll_layers_content"

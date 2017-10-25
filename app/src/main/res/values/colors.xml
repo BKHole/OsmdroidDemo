@@ -7,5 +7,7 @@
     <color name="darkgrey">#a9a9a9</color><!--暗灰色 -->
     <color name="translucent_white_65">#59ffffff</color><!--半透明 -->
     <color name="translucent_white_40">#99ffffff</color>
+    <color name="bg_map_type">#F0F0F0</color>
+    <color name="bg_map_source">#CFCFCF</color>
     <!-- 灰色 -->
 </resources>

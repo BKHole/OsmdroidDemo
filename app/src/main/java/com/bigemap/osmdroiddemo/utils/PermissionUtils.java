@@ -1,104 +1,149 @@
 package com.bigemap.osmdroiddemo.utils;
 
+import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.Uri;
-import android.provider.Settings;
-import android.support.v4.app.ActivityCompat;
+import android.os.Build;
+import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AlertDialog;
 
-/**
- * 权限监测工具
- * Created by Think on 2017/10/9.
- */
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class PermissionUtils {
-    private Context mContext;
-    private static final String PACKAGE = "package:";
+    private final static Map<Integer, OnRequestPermissionsResult> mRequestCache = new HashMap<>();
 
-    public PermissionUtils(Context context) {
-        this.mContext = context;
+    public final static String[] LOCATION_PERMISSION = new String[]{
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_FINE_LOCATION
+    };
+
+    public static boolean checkLocationPermission(Context context) {
+        return checkPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
+                && checkPermission(context, Manifest.permission.ACCESS_FINE_LOCATION);
     }
 
-    /**
-     * 判断权限集合
-     *
-     * @param permissions 检测权限的集合
-     * @return 权限已全部获取返回true，未全部获取返回false
-     */
-    public boolean checkPermissions(String... permissions) {
-        for (String permission : permissions) {
-            if (!checkPermission(permission)) {
+    public static boolean checkPhoneStatePermission(Context context) {
+        return checkPermission(context, Manifest.permission.READ_PHONE_STATE);
+    }
+
+    private static boolean checkPermission(Context context, String permission) {
+        return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    public static boolean checkPermissions(Context context, String[] perms) {
+        for (String perm : perms) {
+            if (!checkPermission(context, perm)) {
                 return false;
             }
         }
         return true;
     }
 
-    /**
-     * 判断权限是否获取
-     *
-     * @param permission 权限名称
-     * @return 已授权返回true，未授权返回false
-     */
-    public boolean checkPermission(String permission) {
-        return ContextCompat.checkSelfPermission(mContext, permission) == PackageManager.PERMISSION_GRANTED;
-    }
-
-    /**
-     * 获取权限
-     *
-     * @param resultCode
-     * @return
-     */
-    public void permissionsCheck(String permission, int resultCode) {
-        // 注意这里要使用shouldShowRequestPermissionRationale而不要使用requestPermission方法
-        // 因为requestPermissions方法会显示不在询问按钮
-        if (ActivityCompat.shouldShowRequestPermissionRationale((Activity) mContext, permission)) {
-            //如果用户以前拒绝过改权限申请，则给用户提示
-            showMissingPermissionDialog();
-        } else {
-            //进行权限请求
-            ActivityCompat.requestPermissions((Activity) mContext,
-                    new String[]{permission},
-                    resultCode);
+    public static void requestPermissionsAndThen(Fragment fragment, int requestCode,
+                                                 String[] perms,
+                                                 PermsCallback permsCallback) {
+        Activity activity = fragment.getActivity();
+        if (Build.VERSION.SDK_INT < 23 || checkPermissions(activity, perms)) {
+            permsCallback.onAllGranted();
+            return;
         }
-//        ActivityCompat.requestPermissions((Activity) mContext, new String[]{permission},resultCode);
+
+        OnRequestPermissionsResult r = prepareRequest(activity, requestCode, perms, permsCallback);
+        fragment.requestPermissions(r.getRequestPerms(), requestCode);
     }
 
-    // 显示缺失权限提示
-    private void showMissingPermissionDialog() {
+    @TargetApi(Build.VERSION_CODES.M)
+    public static void requestPermissionsAndThen(Activity activity, int requestCode,
+                                                 String[] perms,
+                                                 PermsCallback permsCallback) {
+        if (Build.VERSION.SDK_INT < 23 || checkPermissions(activity, perms)) {
+            permsCallback.onAllGranted();
+            return;
+        }
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-        final AlertDialog alertDialog = builder.create();
-
-        builder.setMessage("当前应用缺少必要权限。\n\n请点击\"设置\"-\"权限\"-打开所需权限。\n\n最后点击两次后退按钮，即可返回。");
-        // 拒绝, 退出应用
-        builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                alertDialog.dismiss();
-            }
-        });
-
-        builder.setPositiveButton("设置", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                startAppSettings();
-            }
-        });
-
-        builder.show();
+        OnRequestPermissionsResult r = prepareRequest(activity, requestCode, perms, permsCallback);
+        activity.requestPermissions(r.getRequestPerms(), requestCode);
     }
 
-    // 启动应用的设置
-    private void startAppSettings() {
-        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-        intent.setData(Uri.parse( PACKAGE + mContext.getPackageName()));
-        mContext.startActivity(intent);
+    private static OnRequestPermissionsResult prepareRequest(Context context,
+                                                             int requestCode,
+                                                             String[] perms,
+                                                             PermsCallback permsCallback) {
+        // only request denied permissions
+        List<String> permsDenied = new ArrayList<>();
+        for (String perm : perms) {
+            if (!checkPermission(context, perm)) {
+                permsDenied.add(perm);
+            }
+        }
+        String[] permsToReq = permsDenied.toArray(new String[permsDenied.size()]);
+        OnRequestPermissionsResult r = new OnRequestPermissionsResult(requestCode, permsToReq, permsCallback);
+        synchronized (mRequestCache) {
+            mRequestCache.put(requestCode, r);
+        }
+        return r;
+    }
+
+    public static void dispatchPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                                 @NonNull int[] grantResults) {
+        OnRequestPermissionsResult r = mRequestCache.get(requestCode);
+        if (r != null) {
+            mRequestCache.remove(requestCode);
+            r.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+    }
+
+    public static abstract class PermsCallback {
+        public abstract void onAllGranted();
+
+        public abstract void onAllDenied();
+    }
+
+    public static class OnRequestPermissionsResult {
+        private int mRequestCode;
+        private String[] mRequestPerms;
+        private PermsCallback mPermsCallback;
+
+        private OnRequestPermissionsResult(int requestCode, String[] requestPerms,
+                                           PermsCallback callback) {
+            mRequestCode = requestCode;
+            mRequestPerms = requestPerms;
+            mPermsCallback = callback;
+        }
+
+        public String[] getRequestPerms() {
+            return mRequestPerms;
+        }
+
+        public int getRequestCode() {
+            return mRequestCode;
+        }
+
+        public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                               @NonNull int[] grantResults) {
+            if (requestCode != mRequestCode) {
+                return;
+            }
+
+            boolean granted = true;
+            for (int grantResult : grantResults) {
+                if (grantResult != PackageManager.PERMISSION_GRANTED) {
+                    granted = false;
+                    break;
+                }
+            }
+
+            if (granted) {
+                mPermsCallback.onAllGranted();
+            } else {
+                mPermsCallback.onAllDenied();
+            }
+        }
     }
 }

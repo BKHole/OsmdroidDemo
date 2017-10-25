@@ -3,13 +3,18 @@ package com.bigemap.osmdroiddemo.entity;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import org.litepal.crud.DataSupport;
+
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * 用于存储轨迹
+ * 轨迹表
  * Created by Think on 2017/9/13.
  */
 
-public class Track implements Parcelable {
-    private int trackid;
+public class Track extends DataSupport implements Parcelable {
+    private int id;
     private String name;
     private String description;
     private String startTime;
@@ -19,16 +24,16 @@ public class Track implements Parcelable {
     private float maxSpeed;
     private double minAltitude;
     private double maxAltitude;
-    private int trackPoints;
     private int trackSource;
     private int trackType;
+    private List<Location> locations =new ArrayList<>();
 
-    public int getTrackid() {
-        return trackid;
+    public int getId() {
+        return id;
     }
 
-    public void setTrackid(int trackid) {
-        this.trackid = trackid;
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getName() {
@@ -103,14 +108,6 @@ public class Track implements Parcelable {
         this.maxAltitude = maxAltitude;
     }
 
-    public int getTrackPoints() {
-        return trackPoints;
-    }
-
-    public void setTrackPoints(int trackPoints) {
-        this.trackPoints = trackPoints;
-    }
-
     public int getTrackSource() {
         return trackSource;
     }
@@ -127,15 +124,13 @@ public class Track implements Parcelable {
         this.trackType = trackType;
     }
 
-    public int getMeasureVersion() {
-        return measureVersion;
+    public List<Location> getLocations() {
+        return locations;
     }
 
-    public void setMeasureVersion(int measureVersion) {
-        this.measureVersion = measureVersion;
+    public void setLocations(List<Location> locations) {
+        this.locations = locations;
     }
-
-    private int measureVersion;
 
     @Override
     public int describeContents() {
@@ -144,7 +139,7 @@ public class Track implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeInt(this.trackid);
+        dest.writeInt(this.id);
         dest.writeString(this.name);
         dest.writeString(this.description);
         dest.writeString(this.startTime);
@@ -154,17 +149,16 @@ public class Track implements Parcelable {
         dest.writeFloat(this.maxSpeed);
         dest.writeDouble(this.minAltitude);
         dest.writeDouble(this.maxAltitude);
-        dest.writeInt(this.trackPoints);
         dest.writeInt(this.trackSource);
         dest.writeInt(this.trackType);
-        dest.writeInt(this.measureVersion);
+        dest.writeList(this.locations);
     }
 
     public Track() {
     }
 
     protected Track(Parcel in) {
-        this.trackid = in.readInt();
+        this.id = in.readInt();
         this.name = in.readString();
         this.description = in.readString();
         this.startTime = in.readString();
@@ -174,10 +168,10 @@ public class Track implements Parcelable {
         this.maxSpeed = in.readFloat();
         this.minAltitude = in.readDouble();
         this.maxAltitude = in.readDouble();
-        this.trackPoints = in.readInt();
         this.trackSource = in.readInt();
         this.trackType = in.readInt();
-        this.measureVersion = in.readInt();
+        this.locations = new ArrayList<Location>();
+        in.readList(this.locations, Location.class.getClassLoader());
     }
 
     public static final Creator<Track> CREATOR = new Creator<Track>() {

@@ -5,6 +5,7 @@ import android.location.Location;
 import org.osmdroid.util.GeoPoint;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 坐标系转换类
@@ -194,11 +195,11 @@ public class PositionUtils {
         return ret;
     }
 
-    public static ArrayList<Location> wgsToGcj(ArrayList<Location> locations){
-        ArrayList<Location> locationArrayList=new ArrayList<>();
+    public static ArrayList<GeoPoint> wgsToGcj(ArrayList<Location> locations){
+        ArrayList<GeoPoint> geoPoints=new ArrayList<>();
         for (Location location: locations){
-            locationArrayList.add(gps_To_Gcj02(location));
+            geoPoints.add(gps84_To_Gcj02(location));
         }
-        return locationArrayList;
+        return geoPoints;
     }
 }

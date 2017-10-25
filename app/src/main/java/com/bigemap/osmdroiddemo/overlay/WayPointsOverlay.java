@@ -4,12 +4,12 @@ import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Point;
 import android.graphics.drawable.Drawable;
-import android.location.Location;
 
 import com.bigemap.osmdroiddemo.R;
-import com.bigemap.osmdroiddemo.db.TrackDao;
+import com.bigemap.osmdroiddemo.entity.Location;
 import com.bigemap.osmdroiddemo.entity.Track;
 
+import org.litepal.crud.DataSupport;
 import org.osmdroid.api.IMapView;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.overlay.ItemizedOverlay;
@@ -30,12 +30,10 @@ public class WayPointsOverlay extends ItemizedOverlay<OverlayItem> {
     private List<OverlayItem> wayPointItems = new ArrayList<OverlayItem>();
 
     private long trackId;
-    private TrackDao trackDao;
 
     public WayPointsOverlay(Context ctx, Drawable pDefaultMarker, long trackId) {
         super(pDefaultMarker);
         this.trackId = trackId;
-        trackDao=new TrackDao(ctx);
         refresh();
     }
 
@@ -62,10 +60,11 @@ public class WayPointsOverlay extends ItemizedOverlay<OverlayItem> {
     private void refresh() {
         wayPointItems.clear();
 
-        List<Location> locations=trackDao.getTrackPoints(trackId);
-        Track track=trackDao.getTrack(trackId);
+        List<Location> locations= DataSupport.findAll(Location.class,trackId);
+        Track track=DataSupport.find(Track.class, trackId);
         for (Location location: locations) {
-            OverlayItem i = new OverlayItem(track.getName(),track.getName(),new GeoPoint(location));
+            GeoPoint point=new GeoPoint(Double.valueOf(location.getLatitude()),Double.valueOf(location.getLongitude()));
+            OverlayItem i = new OverlayItem(track.getName(),track.getName(), point);
             wayPointItems.add(i);
         }
         populate();

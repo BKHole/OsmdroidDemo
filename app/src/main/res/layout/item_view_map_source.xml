@@ -3,7 +3,7 @@
     android:id="@+id/ll_map_source"
     android:layout_width="45dp"
     android:layout_height="wrap_content"
-    android:background="@color/translucent_white_40"
+    android:background="@color/bg_map_source"
     android:gravity="center"
     android:orientation="vertical">
 

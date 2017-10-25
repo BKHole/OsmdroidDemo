@@ -25,7 +25,6 @@ public class TrackRecyclerAdapter extends BaseRecyclerViewAdapter<TrackRecyclerA
     private List<Track> mData;
     private LayoutInflater inflater;
 
-
     public TrackRecyclerAdapter(Context mContext) {
         inflater = LayoutInflater.from(mContext);
     }
@@ -72,7 +71,7 @@ public class TrackRecyclerAdapter extends BaseRecyclerViewAdapter<TrackRecyclerA
 
         private void bind(Track track){
             if (TextUtils.isEmpty(track.getName())) {
-                track.setName("绘制" + track.getTrackid());
+                track.setName("绘制" + track.getId());
             }
             tvTrackName.setText(track.getName());
             tvTrackTime.setText(track.getStartTime());

@@ -41,6 +41,7 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:largeHeap="true"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
@@ -61,9 +62,11 @@
         </activity>
         <activity
             android:name=".activity.MainActivity"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
             android:screenOrientation="nosensor"
-            android:theme="@style/AppTheme.NoActionBar"/>
+            android:theme="@style/AppTheme.NoActionBar">
+
+        </activity>
         <activity
             android:name=".activity.TrackRecordActivity"
             android:screenOrientation="nosensor" />
@@ -78,7 +81,7 @@
         <activity
             android:name=".activity.PointSearchActivity"
             android:screenOrientation="nosensor"
-            android:theme="@style/AppTheme.NoActionBar"/>
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".kml.FileManagerActivity"
             android:screenOrientation="nosensor" />

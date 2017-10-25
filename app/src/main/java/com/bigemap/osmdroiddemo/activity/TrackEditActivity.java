@@ -1,5 +1,6 @@
 package com.bigemap.osmdroiddemo.activity;
 
+import android.content.ContentValues;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -9,12 +10,12 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.bigemap.osmdroiddemo.R;
-import com.bigemap.osmdroiddemo.db.TrackDao;
 import com.bigemap.osmdroiddemo.entity.Track;
+
+import org.litepal.crud.DataSupport;
 
 public class TrackEditActivity extends BaseActivity {
 
-    private TrackDao trackDao;
     private Track track;
     private EditText trackNameEt, trackDescriptionEt;
     private TextView saveTrackTv, viewTrackTv;
@@ -34,9 +35,8 @@ public class TrackEditActivity extends BaseActivity {
     }
 
     private void initData() {
-        trackDao=new TrackDao(this);
         trackId = getIntent().getLongExtra("trackId", 0);
-        track = trackDao.getTrack(trackId);
+        track = DataSupport.find(Track.class, trackId);
     }
 
     private void initView() {
@@ -56,7 +56,10 @@ public class TrackEditActivity extends BaseActivity {
                 String name=trackNameEt.getText().toString();
                 String description=trackDescriptionEt.getText().toString();
                 if (!TextUtils.isEmpty(name)){
-                    trackDao.updateTrack(trackId, name, description);
+                    ContentValues contentValues=new ContentValues();
+                    contentValues.put("name", name);
+                    contentValues.put("description", description);
+                    DataSupport.update(Track.class, contentValues, trackId);
                     Intent intent=new Intent(TrackEditActivity.this, TrackRecordActivity.class);
                     startActivity(intent);
                     finish();
