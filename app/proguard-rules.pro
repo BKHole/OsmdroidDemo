@@ -24,10 +24,16 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
--dontwarn okhttp3.**
--dontwarn okio.**
--dontwarn javax.annotation.**
+# okhttputils
+-dontwarn com.zhy.http.**
+-keep class com.zhy.http.** { *; }
 
--dontwarn org.dom4j.**
--dontwarn org.jaxen.**
--dontwarn org.w3c.dom.**
+# okhttp
+-dontwarn okhttp3.**
+-keep class okhttp3.** { *; }
+
+# okio
+-dontwarn okio.**
+-keep class okio.** { *; }
+
+

@@ -7,7 +7,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
+import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.location.LocationManager;
 import android.os.Build;
@@ -29,7 +29,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -49,6 +48,7 @@ import com.bigemap.osmdroiddemo.constants.Constant;
 import com.bigemap.osmdroiddemo.entity.Location;
 import com.bigemap.osmdroiddemo.entity.Map;
 import com.bigemap.osmdroiddemo.entity.Track;
+import com.bigemap.osmdroiddemo.http.HttpClient;
 import com.bigemap.osmdroiddemo.overlay.MyLocationOverlay;
 import com.bigemap.osmdroiddemo.service.MyLocationService;
 import com.bigemap.osmdroiddemo.utils.AMapUtils;
@@ -57,6 +57,8 @@ import com.bigemap.osmdroiddemo.utils.MapMeasureUtils;
 import com.bigemap.osmdroiddemo.utils.PermissionUtils;
 import com.bigemap.osmdroiddemo.utils.PositionUtils;
 import com.bigemap.osmdroiddemo.utils.UIUtils;
+import com.bigemap.osmdroiddemo.view.IconView;
+import com.zhy.http.okhttp.callback.StringCallback;
 
 import org.litepal.crud.DataSupport;
 import org.osmdroid.tileprovider.tilesource.ITileSource;
@@ -65,6 +67,7 @@ import org.osmdroid.util.BoundingBox;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.Overlay;
 import org.osmdroid.views.overlay.Polygon;
 import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.ScaleBarOverlay;
@@ -72,17 +75,10 @@ import org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider;
 import org.osmdroid.views.overlay.infowindow.BasicInfoWindow;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.FormBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 
 import static com.bigemap.osmdroiddemo.constants.Constant.POST_URL;
 import static com.bigemap.osmdroiddemo.constants.Constant.PREFS_LATITUDE_STRING;
@@ -99,23 +95,22 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     private static final String TAG = "MainActivity";
     public static final String GOOGLE_MAP = "Google Map";
     public static final String GOOGLE_SATELLITE = "Google卫星图";
-    public static final String OSM = "OpenStreetMap";
     private MapView mapView;
     //比例尺
     private ScaleBarOverlay mScaleBarOverlay;
-    //指南针方向
-//    private MyCompassOverlay mCompassOverlay = null;
     //设置导航图标的位置
     private MyLocationOverlay myLocationOverlay;
     //设置自定义定位，缩小，放大
-    private ImageView locationBtn, track, mapModeBtn;
-    private ImageView addPointBtn;
-    private ImageView zoomInBtn, zoomOutBtn, emptyBtn;
+    private ImageView mapModeBtn;
+    private IconView locationBtn, emptyBtn;
+    private LinearLayout tabMap, tabEdit, tabTrack, tabMine;//底部导航栏子控件
+    private LinearLayout navMainBottom;//底部导航栏父控件
+    private ImageView zoomInBtn, zoomOutBtn;
     private ImageView undoBtn, prickBtn, saveBtn;//轨迹绘制操作按钮
     private RelativeLayout prickLayout;
-    private ImageView trackRecord;//轨迹记录
-    private Button shapeBtn, trackBtn, measureBtn, closeBtn;
-    private LinearLayout mainBottomLayout, editToolLayout;
+    private IconView trackRecord;//轨迹记录
+    private TextView polygonMode, lineMode, areaMode, closeBtn;
+    private LinearLayout editBottomTool, editTopTool;
 
     //搜索框
     private CardView searchCardView;
@@ -126,7 +121,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     //地图选择
     private TextView normalMap, satelliteMap;
     private RecyclerView mapSourceList;//地图源列表
-    private boolean isMapChanged=true;
+    private boolean isMapChanged = true;
 
 //    private ScrollView contentScroll;
 //    private ImageView importLayers;
@@ -141,11 +136,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     private int zoomLevel;
     private Polyline polyline;
     private Polygon polygon;
+    private boolean isFullScreen = true;//是否全屏显示
+
+    public static boolean isBackground = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d(TAG, "onCreate: ");
         if (Build.VERSION.SDK_INT >= 23) {
             checkPermissions();
         }
@@ -159,7 +156,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         initView();
         initTileSource();
 
-        Log.d(TAG, "init: tileSource" + mapView.getTileProvider().getTileSource().name());
         mapView.setDrawingCacheEnabled(true);
         mapView.setTilesScaledToDpi(true);//图源比例转换屏幕像素
         mapView.setUseDataConnection(true);
@@ -185,6 +181,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         myLocationOverlay.setDrawAccuracyEnabled(false);
         mapView.getOverlays().add(myLocationOverlay);
 
+        mapClickEvent();
+
         if (mapView.getTileProvider().getTileSource().equals(TileSourceFactory.MAPNIK)) {
             myLocationOverlay.setTileSource(Constant.OSM);
             dataKeeper.putInt(Constant.PREFS_MAP_SOURCE, Constant.OSM);
@@ -198,14 +196,17 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     }
 
     private void initView() {
-        zoomInBtn = $(R.id.btn_zoom_in);
-        zoomOutBtn = $(R.id.btn_zoom_out);
+//        zoomInBtn = $(R.id.btn_zoom_in);
+//        zoomOutBtn = $(R.id.btn_zoom_out);
         emptyBtn = $(R.id.btn_empty);
         locationBtn = $(R.id.btn_location);
         prickLayout = $(R.id.rl_center_prick);
-        addPointBtn = $(R.id.btn_point_edit);
+        tabMap = $(R.id.main_tab_map);
+        tabMap.setSelected(true);
+        tabEdit = $(R.id.main_tab_edit);
+        tabTrack = $(R.id.main_tab_track);
+        tabMine = $(R.id.main_tab_mine);
         trackRecord = $(R.id.btn_track_record);
-        track = $(R.id.btn_track);
         searchText = $(R.id.search_editText);
         searchText.setCursorVisible(false);
         editTextClearBtn = $(R.id.edit_text_clear);
@@ -218,33 +219,36 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         searchCardView.setCardBackgroundColor(ContextCompat.getColor(this, R.color.translucent_white_65));
         mapSourceList = $(R.id.list_map_source);
 
-        editToolLayout = $(R.id.layout_main_edit_tool);
-        shapeBtn = $(R.id.btn_edit_shape);
-        trackBtn = $(R.id.btn_edit_track);
-        measureBtn = $(R.id.btn_edit_measure);
+        editTopTool = $(R.id.edit_top_tool_ly);
+        polygonMode = $(R.id.btn_edit_shape);
+        lineMode = $(R.id.btn_edit_track);
+        lineMode.setSelected(true);
+        areaMode = $(R.id.btn_edit_measure);
         closeBtn = $(R.id.btn_edit_close);
-        mainBottomLayout = $(R.id.layout_main_bottom);
+        editBottomTool = $(R.id.edit_bottom_tool_ly);
         undoBtn = $(R.id.btn_edit_undo);
         prickBtn = $(R.id.btn_edit_prick);
         saveBtn = $(R.id.btn_edit_save);
-
+        navMainBottom = $(R.id.view_main_bottom);
 //        contentScroll = $(R.id.scroll_layers_content);
 //        importLayers = $(R.id.iv_layers_import);
 
         locationBtn.setOnClickListener(this);
-        zoomInBtn.setOnClickListener(this);
-        zoomOutBtn.setOnClickListener(this);
+//        zoomInBtn.setOnClickListener(this);
+//        zoomOutBtn.setOnClickListener(this);
         emptyBtn.setOnClickListener(this);
         mapModeBtn.setOnClickListener(this);
-        addPointBtn.setOnClickListener(this);
+        tabMap.setOnClickListener(this);
+        tabEdit.setOnClickListener(this);
+        tabTrack.setOnClickListener(this);
+        tabMine.setOnClickListener(this);
         trackRecord.setOnClickListener(this);
-        track.setOnClickListener(this);
         undoBtn.setOnClickListener(this);
         prickBtn.setOnClickListener(this);
         saveBtn.setOnClickListener(this);
-        shapeBtn.setOnClickListener(this);
-        trackBtn.setOnClickListener(this);
-        measureBtn.setOnClickListener(this);
+        polygonMode.setOnClickListener(this);
+        lineMode.setOnClickListener(this);
+        areaMode.setOnClickListener(this);
         closeBtn.setOnClickListener(this);
         prickLayout.setOnClickListener(this);
         searchText.setOnClickListener(this);
@@ -275,8 +279,36 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         }
     }
 
+    private void mapClickEvent() {
+        Overlay mapEventOverlay=new Overlay() {
+            @Override
+            public void draw(Canvas c, MapView osmv, boolean shadow) {
+
+            }
+
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent e, MapView mapView) {
+                if (isFullScreen) {
+                    isFullScreen = false;
+                    searchCardView.setVisibility(View.GONE);
+                    navMainBottom.setVisibility(View.GONE);
+                    mapModeBtn.setVisibility(View.GONE);
+                    emptyBtn.setVisibility(View.GONE);
+                } else {
+                    isFullScreen=true;
+                    searchCardView.setVisibility(View.VISIBLE);
+                    navMainBottom.setVisibility(View.VISIBLE);
+                    mapModeBtn.setVisibility(View.VISIBLE);
+                    emptyBtn.setVisibility(View.VISIBLE);
+                }
+                return super.onSingleTapConfirmed(e, mapView);
+            }
+        };
+        mapView.getOverlays().add(mapEventOverlay);
+    }
     /**
      * 判断程序是否第一次启动
+     *
      * @return boolean
      */
     private boolean isFirstStart() {
@@ -284,40 +316,36 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     }
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        Log.d(TAG, "onNewIntent: test");
+    }
+
+    @Override
     protected void onStart() {
         super.onStart();
+        isBackground = false;
 //        postUrl("login");
-        Log.d(TAG, "onStart: ");
     }
 
     /**
      * 统计次数
+     *
      * @param type
      */
     private void postUrl(String type) {
-        OkHttpClient mOkHttpClient = new OkHttpClient();
         if (PermissionUtils.checkPhoneStatePermission(this)) {
             TelephonyManager telManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
             String imei = telManager.getDeviceId();
-            RequestBody requestBodyPost = new FormBody.Builder()
-                    .add("type", type)
-                    .add("imei", imei)
-                    .build();
-
-            Request requestPost = new Request.Builder()
-                    .url(POST_URL)
-                    .post(requestBodyPost)
-                    .build();
-            mOkHttpClient.newCall(requestPost).enqueue(new Callback() {
+            HttpClient.postImei(POST_URL, type, imei, new StringCallback() {
                 @Override
-                public void onFailure(Call call, IOException e) {
+                public void onError(Call call, Exception e, int id) {
 
                 }
 
                 @Override
-                public void onResponse(Call call, Response response) throws IOException {
-                    final String string = response.body().string();
-                    Log.d(TAG, "onResponse: " + string);
+                public void onResponse(String response, int id) {
+                    Log.d(TAG, "onResponse: " + response);
                 }
             });
         }
@@ -327,13 +355,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     @Override
     protected void onRestart() {
         super.onRestart();
-        Log.d(TAG, "onRestart: ");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d(TAG, "onResume: ");
 
         zoomLevel = dataKeeper.getInt(PREFS_ZOOM_LEVEL_DOUBLE, dataKeeper.getInt(PREFS_ZOOM_LEVEL, 10));
         mapView.getController().setZoom(zoomLevel);
@@ -352,30 +378,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
             mapView.getController().animateTo(new GeoPoint(latitude, longitude));
         }
 
-//        if (mPrefs.getBoolean(PREFS_SHOW_COMPASS, false)) {
-//            if (mCompassOverlay != null) {
-//                //this call is needed because onPause, the orientation provider is destroyed to prevent context leaks
-//                this.mCompassOverlay.setOrientationProvider(new InternalCompassOrientationProvider(this));
-//                this.mCompassOverlay.enableCompass();
-//            }
-//        }
-
-        long trackId = getIntent().getLongExtra("trackId", -1);
-        if (trackId > -1) {
-            List<Location> locations = DataSupport.findAll(Location.class, trackId);
-            ArrayList<GeoPoint> geoPoints = new ArrayList<>();
-            for (Location location : locations) {
-                geoPoints.add(new GeoPoint(Double.valueOf(location.getLatitude()), Double.valueOf(location.getLongitude())));
-            }
-            setPolyline(geoPoints);
-            final BoundingBox boundingBox = BoundingBox.fromGeoPoints(geoPoints);
-            mapView.getController().animateTo(boundingBox.getCenter());
-        }
-
     }
 
     @Override
     protected void onPause() {
+        isBackground = true;
         dataKeeper.put("first_start", false);
         dataKeeper.put(PREFS_TILE_SOURCE, mapView.getTileProvider().getTileSource().name());
         dataKeeper.put(PREFS_ORIENTATION, mapView.getMapOrientation());
@@ -383,36 +390,30 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         dataKeeper.put(PREFS_LONGITUDE_STRING, String.valueOf(mapView.getMapCenter().getLongitude()));
         dataKeeper.putInt(PREFS_ZOOM_LEVEL_DOUBLE, mapView.getZoomLevel());
         dataKeeper.put(PREFS_SHOW_LOCATION, myLocationOverlay.isMyLocationEnabled());
-//        if (mCompassOverlay != null) {
-//            edit.putBoolean(PREFS_SHOW_COMPASS, mCompassOverlay.isCompassEnabled());
-//            this.mCompassOverlay.disableCompass();
-//        }
         super.onPause();
-        Log.d(TAG, "onPause: ");
         myLocationOverlay.disableMyLocation();
+        myLocationOverlay.disableCompass();
         mScaleBarOverlay.disableScaleBar();
     }
 
     @Override
     protected void onDestroy() {
 //        postUrl("logout");
-        super.onDestroy();
-        if (myReceiver!=null){
+        if (myReceiver != null) {
             unregisterReceiver(myReceiver);
         }
-        Log.d(TAG, "onDestroy: ");
+        super.onDestroy();
     }
 
     // START PERMISSION CHECK
     private final int REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS = 124;
-    private final int REQUEST_CODE_ASK_LOCATION_PERMISSIONS = 123;
 
     private void checkPermissions() {
         List<String> permissions = new ArrayList<>();
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (!PermissionUtils.checkLocationPermission(this)) {
             permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
         }
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+        if (!PermissionUtils.checkPhoneStatePermission(this)) {
             permissions.add(Manifest.permission.READ_PHONE_STATE);
         }
         if (!permissions.isEmpty()) {
@@ -434,6 +435,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                             mapView.getController().animateTo(convertedPoint);
                         }
                     });
+                } else {
+                    toastUtils.showSingletonToast("需要定位权限");
                 }
                 break;
             default:
@@ -471,6 +474,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
 
     /**
      * 线
+     *
      * @param points
      */
     private void setPolyline(List<GeoPoint> points) {
@@ -491,7 +495,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         polygon = new Polygon();
         polygon.setStrokeWidth(5);
         polygon.setStrokeColor(R.color.colorAccent);
-        polygon.setFillColor(R.color.colorPrimary);
+        polygon.setFillColor(R.color.blue);
         polygon.setPoints(points);
         mapView.getOverlays().add(polygon);
         mapView.invalidate();
@@ -569,13 +573,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         String name = "";
         switch (drawType) {
             case 0:
-                name = trackBtn.getText() + "&" + time;
+                name = lineMode.getText() + "&" + time;
                 break;
             case 1:
-                name = shapeBtn.getText() + "&" + time;
+                name = polygonMode.getText() + "&" + time;
                 break;
             case 2:
-                name = measureBtn.getText() + "&" + time;
+                name = areaMode.getText() + "&" + time;
                 break;
         }
         switch (v.getId()) {
@@ -590,45 +594,60 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                     checkPermissions();
                 }
                 break;
-            case R.id.btn_zoom_in://放大
-                mapView.getController().zoomIn();//默认按级缩放
-                break;
-            case R.id.btn_zoom_out://缩小
-                mapView.getController().zoomOut();
-                break;
+//            case R.id.btn_zoom_in://放大
+//                mapView.getController().zoomIn();//默认按级缩放
+//                break;
+//            case R.id.btn_zoom_out://缩小
+//                mapView.getController().zoomOut();
+//                break;
             case R.id.btn_empty:
                 points.clear();
                 mapView.getOverlays().clear();
                 mapView.getOverlays().add(mScaleBarOverlay);
 //                mapView.getOverlays().add(mCompassOverlay);
                 mapView.getOverlays().add(myLocationOverlay);
+                mapClickEvent();
                 mapView.invalidate();
                 break;
             case R.id.btn_map_mode://地图切换
                 if (isMapChanged) {
-                    isMapChanged=false;
+                    isMapChanged = false;
                     showMapSource();
                     showMapType();
                 } else {
-                    isMapChanged=true;
+                    isMapChanged = true;
                     hideMapSource();
                     hideMapType();
                 }
                 break;
-            case R.id.btn_point_edit://开始绘制轨迹
-                editToolLayout.setVisibility(View.VISIBLE);
+            case R.id.main_tab_edit://绘制轨迹
+                editTopTool.setVisibility(View.VISIBLE);
                 prickLayout.setVisibility(View.VISIBLE);
                 trackRecord.setVisibility(View.GONE);
-                mainBottomLayout.setVisibility(View.VISIBLE);
+                editBottomTool.setVisibility(View.VISIBLE);
                 searchCardView.setVisibility(View.GONE);
+                navMainBottom.setVisibility(View.GONE);
                 myLocationOverlay.disableCompass();
+                break;
+            case R.id.main_tab_map:
+                tabMap.setSelected(true);
+                tabMine.setSelected(false);
+                break;
+            case R.id.main_tab_track://查看轨迹记录
+                Intent i = new Intent(MainActivity.this, TrackRecordActivity.class);
+                startActivityForResult(i, 33);
+//                UIUtils.showTrackRecordActivity(MainActivity.this);
+                break;
+            case R.id.main_tab_mine:
+                tabMine.setSelected(true);
+                tabMap.setSelected(false);
                 break;
             case R.id.btn_track_record://轨迹记录
                 startTime = DateUtils.formatUTC(System.currentTimeMillis(), null);
                 if (isRecord) {
-                    isRecord=false;
+                    isRecord = false;
                     locationList.clear();
-                    trackRecord.setImageResource(R.drawable.ic_vector_pause);
+                    trackRecord.setText(R.string.track_stop);
                     toastUtils.showToast("开始记录轨迹");
                     startService(new Intent(this, MyLocationService.class));
                     // 注册广播
@@ -638,8 +657,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                     registerReceiver(myReceiver, filter);
                     myLocationOverlay.enableFollowLocation();
                 } else {
-                    isRecord=true;
-                    trackRecord.setImageResource(R.drawable.ic_vector_play);
+                    isRecord = true;
+                    trackRecord.setText(R.string.track_start);
                     stopService(new Intent(this, MyLocationService.class));
                     if (locationList.size() > 1) {
                         toastUtils.showToast("停止记录轨迹");
@@ -651,9 +670,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                     saveTrack(startTime, name, locationList);
                 }
                 break;
-            case R.id.btn_track://查看轨迹记录
-                UIUtils.showTrackActivity(MainActivity.this);
-                break;
+
             case R.id.btn_edit_undo://撤销上一步
                 if (points.size() > 0) {
                     points.remove(points.size() - 1);
@@ -671,7 +688,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                 startTime = DateUtils.formatUTC(System.currentTimeMillis(), null);
                 if (points.size() > 1) {
                     Track track = saveTrack(startTime, name, points);
-                    int trackId=track.getId();
+                    int trackId = track.getId();
                     UIUtils.showTrackEditActivity(MainActivity.this, trackId);
                     Log.d(TAG, "trackId=" + trackId);
                 } else {
@@ -680,38 +697,39 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                 points.clear();
                 break;
             case R.id.btn_edit_shape://图形
+                polygonMode.setSelected(true);
+                lineMode.setSelected(false);
+                areaMode.setSelected(false);
+                saveBtn.setVisibility(View.VISIBLE);
                 points.clear();
                 drawType = 1;
-                saveBtn.setVisibility(View.VISIBLE);
-                shapeBtn.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary));
-                trackBtn.setBackgroundColor(ContextCompat.getColor(this, R.color.colorAccent));
-                measureBtn.setBackgroundColor(ContextCompat.getColor(this, R.color.colorAccent));
                 break;
             case R.id.btn_edit_track://轨迹
+                polygonMode.setSelected(false);
+                lineMode.setSelected(true);
+                areaMode.setSelected(false);
+                saveBtn.setVisibility(View.VISIBLE);
                 points.clear();
                 drawType = 0;
-                saveBtn.setVisibility(View.VISIBLE);
-                shapeBtn.setBackgroundColor(ContextCompat.getColor(this, R.color.colorAccent));
-                trackBtn.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary));
-                measureBtn.setBackgroundColor(ContextCompat.getColor(this, R.color.colorAccent));
                 break;
             case R.id.btn_edit_measure://周长和面积
+                polygonMode.setSelected(false);
+                lineMode.setSelected(false);
+                areaMode.setSelected(true);
+                saveBtn.setVisibility(View.GONE);
                 points.clear();
                 drawType = 2;
-                saveBtn.setVisibility(View.GONE);
-                shapeBtn.setBackgroundColor(ContextCompat.getColor(this, R.color.colorAccent));
-                trackBtn.setBackgroundColor(ContextCompat.getColor(this, R.color.colorAccent));
-                measureBtn.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary));
                 break;
             case R.id.btn_edit_close://关闭轨迹绘制
                 myLocationOverlay.setOrientationProvider(new InternalCompassOrientationProvider(this));
                 myLocationOverlay.enableCompass();
                 points.clear();
-                editToolLayout.setVisibility(View.GONE);
+                editTopTool.setVisibility(View.GONE);
                 prickLayout.setVisibility(View.GONE);
                 trackRecord.setVisibility(View.VISIBLE);
-                mainBottomLayout.setVisibility(View.GONE);
+                editBottomTool.setVisibility(View.GONE);
                 searchCardView.setVisibility(View.VISIBLE);
+                navMainBottom.setVisibility(View.VISIBLE);
                 break;
             case R.id.edit_text_clear://清空搜索输入
                 searchText.setText("");
@@ -748,8 +766,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
 
     /**
      * 保存轨迹
+     *
      * @param startTime 开始时间
-     * @param name 轨迹名称
+     * @param name      轨迹名称
      * @param geoPoints 轨迹点
      * @return
      */
@@ -928,6 +947,30 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         intent.setComponent(comp);
         intent.setAction("android.intent.action.VIEW");
         startActivityForResult(intent, 0);
+    }
+
+    /**
+     * @param requestCode
+     * @param resultCode
+     * @param data
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode == 33) {
+            long trackId = data.getLongExtra("trackId", -1);
+            String track_id = String.valueOf(trackId);
+            if (trackId > -1) {
+                List<Location> locations = DataSupport.where("track_id = ?", track_id).find(Location.class);
+                ArrayList<GeoPoint> geoPoints = new ArrayList<>();
+                for (Location location : locations) {
+                    geoPoints.add(new GeoPoint(Double.valueOf(location.getLatitude()), Double.valueOf(location.getLongitude())));
+                }
+                setPolyline(geoPoints);
+                final BoundingBox boundingBox = BoundingBox.fromGeoPoints(geoPoints);
+                mapView.zoomToBoundingBox(boundingBox, true);
+//                mapView.getController().animateTo(boundingBox.getCenter());
+            }
+        }
     }
 
 }

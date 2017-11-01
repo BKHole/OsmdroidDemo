@@ -1,15 +1,11 @@
 package com.bigemap.osmdroiddemo.service;
 
-import android.Manifest;
-import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -19,11 +15,12 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.support.annotation.Nullable;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
 import com.bigemap.osmdroiddemo.R;
 import com.bigemap.osmdroiddemo.activity.MainActivity;
+import com.bigemap.osmdroiddemo.entity.Track;
+import com.bigemap.osmdroiddemo.utils.PermissionUtils;
 import com.bigemap.osmdroiddemo.utils.PositionUtils;
 
 import org.osmdroid.util.GeoPoint;
@@ -32,11 +29,15 @@ import java.util.ArrayList;
 
 public class MyLocationService extends Service implements LocationListener {
     private static final String TAG = "MyLocationService";
+    private static final int UPDATE_TIME = 2000;
+    private static final int UPDATE_DISTANCE = 5;
 
     private NotificationManager mNotificationManager;
     public ArrayList<Location> locationArrayList;
     private LocationManager locationManager;
     private PowerManager.WakeLock wakeLock;
+    private String networkProvider = LocationManager.NETWORK_PROVIDER;
+    private String gpsProvider = LocationManager.GPS_PROVIDER;
 
     @Override
     public void onCreate() {
@@ -52,9 +53,9 @@ public class MyLocationService extends Service implements LocationListener {
         Log.d(TAG, "onStartCommand: ");
         showNotification();
         acquireWakeLock();
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, this);
-//            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000, 0, this);
+        if (PermissionUtils.checkLocationPermission(this)) {
+            locationManager.requestLocationUpdates(gpsProvider, UPDATE_TIME, UPDATE_DISTANCE, this);
+//            locationManager.requestLocationUpdates(networkProvider, 2000, 0, this);
         }
         return super.onStartCommand(intent, flags, startId);
     }
@@ -89,17 +90,27 @@ public class MyLocationService extends Service implements LocationListener {
     public void onStatusChanged(String provider, int status, Bundle extras) {
         Log.d(TAG, "onStatusChanged: provider=" + provider);
         switch (status) {
-            // GPS状态为可见时
+            // GPS状态为可见时2
             case LocationProvider.AVAILABLE:
                 Log.i(TAG, "当前GPS状态为可见状态");
+                if (provider.equals("gps")) {
+                    if (PermissionUtils.checkLocationPermission(this)) {
+                        locationManager.requestLocationUpdates(gpsProvider, UPDATE_TIME, UPDATE_DISTANCE, this);
+                    }
+                }
                 break;
-            // GPS状态为服务区外时
+            // GPS状态为服务区外时0
             case LocationProvider.OUT_OF_SERVICE:
                 Log.i(TAG, "当前GPS状态为服务区外状态");
                 break;
-            // GPS状态为暂停服务时
+            // GPS状态为暂停服务时1
             case LocationProvider.TEMPORARILY_UNAVAILABLE:
                 Log.i(TAG, "当前GPS状态为暂停服务状态");
+                if (provider.equals("gps")) {
+                    if (PermissionUtils.checkLocationPermission(this)) {
+                        locationManager.requestLocationUpdates(networkProvider, UPDATE_TIME, UPDATE_DISTANCE, this);
+                    }
+                }
                 break;
         }
     }
@@ -107,11 +118,11 @@ public class MyLocationService extends Service implements LocationListener {
     @Override
     public void onProviderEnabled(String provider) {
         Log.d(TAG, "onProviderEnabled: provider=" + provider);
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (PermissionUtils.checkLocationPermission(this)) {
             if ("gps".equals(provider)) {
-                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, this);
+                locationManager.requestLocationUpdates(gpsProvider, UPDATE_TIME, UPDATE_DISTANCE, this);
             } else {
-                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000, 0, this);
+                locationManager.requestLocationUpdates(networkProvider, UPDATE_TIME, UPDATE_DISTANCE, this);
             }
             Location location = locationManager.getLastKnownLocation(provider);
             addCoordinates(location);
@@ -122,8 +133,8 @@ public class MyLocationService extends Service implements LocationListener {
     public void onProviderDisabled(String provider) {
         Log.d(TAG, "onProviderDisabled: ");
         if ("gps".equals(provider)) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000, 0, this);
+            if (PermissionUtils.checkLocationPermission(this)) {
+                locationManager.requestLocationUpdates(networkProvider, UPDATE_TIME, UPDATE_DISTANCE, this);
             }
         }
     }
@@ -154,31 +165,20 @@ public class MyLocationService extends Service implements LocationListener {
         mNotificationManager.cancel(1);
     }
 
-    // 获取gps 信息
-    public void getLocation() throws Exception {
-        String bestProvider = locationManager.getBestProvider(getCriteria(), true);
-        // 获取位置信息
-        // 如果不设置查询要求，getLastKnownLocation方法传人的参数为LocationManager.GPS_PROVIDER
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            Location location = locationManager.getLastKnownLocation(bestProvider);
-            addCoordinates(location);
-            // 设置每2秒获取一次GPS的定位信息
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, this);
-        }
-    }
-
     // 将GPS数据放入集合中
     public void addCoordinates(Location mLocation) {
         if (null != mLocation) {
             locationArrayList.add(mLocation);
-            sendLocation(locationArrayList);
+            if (!MainActivity.isBackground){
+                sendLocation(locationArrayList);
+            }
         }
     }
 
     /**
      * 将数据传递到activity中
      *
-     * @param list
+     * @param list 定位数据列表
      */
     private void sendLocation(ArrayList<Location> list) {
         ArrayList<GeoPoint> convertedList = PositionUtils.wgsToGcj(list);
@@ -186,28 +186,6 @@ public class MyLocationService extends Service implements LocationListener {
         intent.putParcelableArrayListExtra("saveGps", convertedList);
         intent.setAction("com.bigemap.osmdroiddemo.service.intent.locationList");
         sendBroadcast(intent);
-    }
-
-    /**
-     * 返回查询条件
-     *
-     * @return
-     */
-    private Criteria getCriteria() {
-        Criteria criteria = new Criteria();
-        // 设置定位精确度 Criteria.ACCURACY_COARSE比较粗略，Criteria.ACCURACY_FINE则比较精细
-        criteria.setAccuracy(Criteria.ACCURACY_FINE);
-        // 设置是否要求速度
-        criteria.setSpeedRequired(false);
-        // 设置是否允许运营商收费
-        criteria.setCostAllowed(false);
-        // 设置是否需要方位信息
-        criteria.setBearingRequired(false);
-        // 设置是否需要海拔信息
-        criteria.setAltitudeRequired(false);
-        // 设置对电源的需求
-        criteria.setPowerRequirement(Criteria.POWER_LOW);
-        return criteria;
     }
 
     /**

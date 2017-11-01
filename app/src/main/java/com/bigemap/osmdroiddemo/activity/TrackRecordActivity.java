@@ -1,6 +1,7 @@
 package com.bigemap.osmdroiddemo.activity;
 
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.DividerItemDecoration;
@@ -30,6 +31,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class TrackRecordActivity extends BaseActivity implements View.OnClickListener{
 
     private static final String TAG = "TrackActivity";
@@ -38,7 +40,7 @@ public class TrackRecordActivity extends BaseActivity implements View.OnClickLis
     private List<Track> tracks;
     private long trackID;
     private TextView noDataTv;
-    private WriteKml writeKml=new WriteKml();
+    private WriteKml writeKml=new WriteKml(this);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,7 +100,6 @@ public class TrackRecordActivity extends BaseActivity implements View.OnClickLis
                 Track track= (Track) data;
                 trackID=track.getId();
                 popUpDialog(trackID);
-                Log.d(TAG, "onLongClick: test");
             }
         });
     }
@@ -108,7 +109,7 @@ public class TrackRecordActivity extends BaseActivity implements View.OnClickLis
      */
     private void popUpDialog(final long trackID) {
         // 创建数据
-        final String[] items = new String[] { "导出kml", "删除"};
+        final String[] items = new String[] { "导出kml","查看", "删除"};
         // 创建对话框构建器
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         // 设置参数
@@ -129,7 +130,8 @@ public class TrackRecordActivity extends BaseActivity implements View.OnClickLis
                                         case 1://polygon
                                             type="polygon";
                                     }
-                                    List<Location> points=DataSupport.findAll(Location.class,trackID);
+                                    String track_id=String.valueOf(trackID);
+                                    List<Location> points=DataSupport.where("track_id = ?", track_id).find(Location.class);
                                     for (Location location: points){
                                         Coordinate coordinate=new Coordinate(Double.valueOf(location.getLongitude())
                                                 ,Double.valueOf(location.getLatitude()), track.getName());
@@ -141,8 +143,14 @@ public class TrackRecordActivity extends BaseActivity implements View.OnClickLis
                                 }
                                 break;
                             case 1:
+                                Intent i = new Intent();
+                                i.putExtra("trackId",trackID);
+                                setResult(33, i);
+                                TrackRecordActivity.this.finish();
+                                break;
+                            case 2:
                                 DataSupport.delete(Track.class,trackID);
-                                tracks = DataSupport.findAll(Track.class);
+                                tracks = DataSupport.order("id desc").find(Track.class);
                                 trackAdapter.setDataList(tracks);
                                 isDataNull();
                                 break;
@@ -155,34 +163,29 @@ public class TrackRecordActivity extends BaseActivity implements View.OnClickLis
     @Override
     protected void onStart() {
         super.onStart();
-        Log.d(TAG, "onStart: ");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        tracks = DataSupport.findAll(Track.class);
+        tracks = DataSupport.order("id desc").find(Track.class);
         trackAdapter.setDataList(tracks);
         isDataNull();
-        Log.d(TAG, "onResume: ");
     }
 
     @Override
     protected void onRestart() {
         super.onRestart();
-        Log.d(TAG, "onRestart: ");
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        Log.d(TAG, "onPause: ");
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Log.d(TAG, "onDestroy: ");
     }
 
     @Override

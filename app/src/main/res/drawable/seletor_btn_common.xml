@@ -5,6 +5,6 @@
         <color android:color="@color/colorAccent" />
     </item>
     <item>
-        <color android:color="@color/colorPrimary" />
+        <color android:color="@color/blue" />
     </item>
 </selector>

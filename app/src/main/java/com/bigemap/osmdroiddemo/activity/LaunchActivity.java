@@ -1,7 +1,6 @@
 package com.bigemap.osmdroiddemo.activity;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -11,28 +10,17 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
-import android.telephony.TelephonyManager;
-import android.view.View;
-import android.view.Window;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.AnimationSet;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.bigemap.osmdroiddemo.R;
 import com.bigemap.osmdroiddemo.constants.Constant;
-import com.bigemap.osmdroiddemo.service.MyLocationService;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class LaunchActivity extends BaseActivity {
 
@@ -47,7 +35,7 @@ public class LaunchActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_launch);
         launchImage = $(R.id.iv_start_title);
-        timerTv=$(R.id.tv_time);
+        timerTv = $(R.id.tv_time);
         initAnimation();
         initEvent();
     }
@@ -62,7 +50,7 @@ public class LaunchActivity extends BaseActivity {
         alphaAnimation.setFillAfter(true);
         animationSet.addAnimation(alphaAnimation);
         launchImage.setAnimation(animationSet);
-        timer=new MyCountDownTimer(3000, 1000);
+        timer = new MyCountDownTimer(3000, 1000);
         timer.start();
     }
 
@@ -75,16 +63,16 @@ public class LaunchActivity extends BaseActivity {
 
             @Override
             public void onAnimationEnd(Animation animation) {
-                if (Build.VERSION.SDK_INT >= 23){
-                    if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!=PackageManager.PERMISSION_GRANTED){
+                if (Build.VERSION.SDK_INT >= 23) {
+                    if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                         requestPermissions(
-                                new String[] { Manifest.permission.WRITE_EXTERNAL_STORAGE },
+                                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
                                 REQUEST_CODE_ASK_WRITING_PERMISSIONS);
-                    }else{
+                    } else {
                         initFile();
                         loadHomePage();
                     }
-                }else{
+                } else {
                     initFile();
                     loadHomePage();
                 }
@@ -102,22 +90,23 @@ public class LaunchActivity extends BaseActivity {
     /**
      * 初始化文件目录
      */
-    private void initFile(){
-        new Thread(){
+    private void initFile() {
+        new Thread() {
             @Override
             public void run() {
                 File file = new File(Constant.IMPORT_KML_PATH);
-                if (!file.exists()){
+                if (!file.exists()) {
                     file.mkdirs();
                 }
                 file = new File(Constant.EXPORT_KML_PATH);
-                if (!file.exists()){
+                if (!file.exists()) {
                     file.mkdirs();
                 }
             }
         }.start();
 
     }
+
     /**
      * 跳转主页面
      */
@@ -131,12 +120,12 @@ public class LaunchActivity extends BaseActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch (requestCode){
+        switch (requestCode) {
             case REQUEST_CODE_ASK_WRITING_PERMISSIONS:
-                if (grantResults[0]==PackageManager.PERMISSION_GRANTED){
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     initFile();
                     loadHomePage();
-                }else {
+                } else {
                     // Permission Denied
                     showMissingPermissionDialog();
                 }
@@ -148,7 +137,7 @@ public class LaunchActivity extends BaseActivity {
 
     }
 
-    private class MyCountDownTimer extends CountDownTimer{
+    private class MyCountDownTimer extends CountDownTimer {
 
         public MyCountDownTimer(long millisInFuture, long countDownInterval) {
             super(millisInFuture, countDownInterval);
@@ -167,7 +156,7 @@ public class LaunchActivity extends BaseActivity {
 
     @Override
     protected void onDestroy() {
-        if ( timer!= null) {
+        if (timer != null) {
             timer.cancel();
         }
         super.onDestroy();
@@ -201,7 +190,7 @@ public class LaunchActivity extends BaseActivity {
     // 启动应用的设置
     private void startAppSettings() {
         Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-        intent.setData(Uri.parse( "package:" + getPackageName()));
+        intent.setData(Uri.parse("package:" + getPackageName()));
         startActivity(intent);
     }
 }

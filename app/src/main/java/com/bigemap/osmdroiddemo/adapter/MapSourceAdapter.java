@@ -6,6 +6,7 @@ import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -68,12 +69,9 @@ public class MapSourceAdapter extends BaseRecyclerViewAdapter<MapSourceAdapter.V
         holder.setTag(map);
         holder.bind(map);
         if (defItem == position) {
-            holder.mapName.setTextColor(Color.parseColor("#ffffff"));
-            holder.mapSource.setBackgroundColor(ContextCompat.getColor(context, R.color.colorAccent));
-        } else {
-            holder.mapName.setTextColor(Color.parseColor("#000000"));
-            holder.mapSource.setBackgroundColor(ContextCompat.getColor(context, R.color.translucent_white_40));
-//                holder.mapSource.setSelected(false);
+            holder.mapIcon.setSelected(true);
+        }else{
+            holder.mapIcon.setSelected(false);
         }
     }
 
@@ -83,13 +81,13 @@ public class MapSourceAdapter extends BaseRecyclerViewAdapter<MapSourceAdapter.V
     }
 
     class ViewHolder extends BaseRecyclerViewHolder implements View.OnClickListener {
-        LinearLayout mapSource;
+        FrameLayout mapSource;
         ImageView mapIcon;
         TextView mapName;
 
         private ViewHolder(View itemView) {
             super(itemView);
-            mapSource = (LinearLayout) itemView.findViewById(R.id.ll_map_source);
+            mapSource = (FrameLayout) itemView.findViewById(R.id.ll_map_source);
             mapIcon = (ImageView) itemView.findViewById(R.id.iv_map_source_icon);
             mapName = (TextView) itemView.findViewById(R.id.tv_map_source_name);
             itemView.setOnClickListener(this);

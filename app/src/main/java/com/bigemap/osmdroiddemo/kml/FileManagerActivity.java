@@ -1,9 +1,7 @@
 package com.bigemap.osmdroiddemo.kml;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -11,10 +9,9 @@ import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.bigemap.osmdroiddemo.R;
-import com.bigemap.osmdroiddemo.activity.TrackRecordActivity;
+import com.bigemap.osmdroiddemo.activity.BaseActivity;
 import com.bigemap.osmdroiddemo.adapter.FileRecyclerAdapter;
 import com.bigemap.osmdroiddemo.constants.Constant;
 import com.bigemap.osmdroiddemo.entity.Coordinate;
@@ -31,7 +28,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FileManagerActivity extends AppCompatActivity {
+public class FileManagerActivity extends BaseActivity {
 
     private static final String TAG = "FileManagerActivity";
     private List<String> items = null;   //items：存放显示的名称
@@ -108,12 +105,10 @@ public class FileManagerActivity extends AppCompatActivity {
                                 track.getLocations().add(location);
                             }
                             track.save();
-                            Intent intent = new Intent();
-                            intent.setClass(FileManagerActivity.this, TrackRecordActivity.class);
-                            startActivity(intent);
+                            UIUtils.showTrackRecordActivity(FileManagerActivity.this);
                             finish();
                         }else{
-                            Toast.makeText(FileManagerActivity.this, "导入失败", Toast.LENGTH_SHORT).show();
+                            toastUtils.showToast("导入失败");
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -165,7 +160,7 @@ public class FileManagerActivity extends AppCompatActivity {
             case android.R.id.home:
                 File file = new File(path_edit.getText().toString());
                 if (rootPath.equals(path_edit.getText().toString())) {
-                    UIUtils.showTrackActivity(this);
+                    UIUtils.showTrackRecordActivity(this);
                     finish();
                 } else {
                     getFileDir(file.getParent());

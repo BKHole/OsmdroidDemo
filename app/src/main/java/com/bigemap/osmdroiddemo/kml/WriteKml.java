@@ -1,11 +1,10 @@
 package com.bigemap.osmdroiddemo.kml;
 
 import android.content.Context;
-import android.location.Location;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.bigemap.osmdroiddemo.MainApplication;
+import com.bigemap.osmdroiddemo.application.MainApplication;
 import com.bigemap.osmdroiddemo.constants.Constant;
 import com.bigemap.osmdroiddemo.entity.Coordinate;
 
@@ -29,6 +28,7 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+
 /**
  * 导出kml
  * Created by Think on 2017/9/26.
@@ -36,7 +36,10 @@ import java.util.zip.ZipOutputStream;
 
 public class WriteKml {
     private static final String TAG = "WriteKml";
-
+    private Context mContext;
+    public WriteKml(Context context){
+        this.mContext=context;
+    }
     /*
     * 传入三个参数，一是kml的名称，第二个是坐标点的list，第三个是导出轨迹类型
     * */
@@ -84,7 +87,7 @@ public class WriteKml {
         xmlWriter.close();
         //开始对文件进行压缩，一个kmz文件其实是一个压缩文件，里面包含一个kml文件和一个png图标
 //        zipWriteKml(docKmlPath, kmlName);
-        Toast.makeText(MainApplication.getAppContext(), "导出kml成功", Toast.LENGTH_SHORT).show();
+        Toast.makeText(mContext, "导出kml成功", Toast.LENGTH_SHORT).show();
     }
 
     /*
@@ -92,7 +95,7 @@ public class WriteKml {
     * */
     public void zipWriteKml(String docKmlPath, String kmlName) throws IOException {
         // 最终生成的kml文件
-        FileOutputStream fileOutput = MainApplication.getAppContext().openFileOutput(kmlName + ".kml", Context.MODE_PRIVATE);
+        FileOutputStream fileOutput = mContext.openFileOutput(kmlName + ".kml", Context.MODE_PRIVATE);
 
         OutputStream os = new BufferedOutputStream(fileOutput);
         ZipOutputStream zos = new ZipOutputStream(os);

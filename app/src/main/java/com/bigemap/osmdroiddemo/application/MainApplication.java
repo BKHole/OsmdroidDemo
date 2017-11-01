@@ -14,34 +14,44 @@
  * limitations under the License.
  */
 
-package com.bigemap.osmdroiddemo;
+package com.bigemap.osmdroiddemo.application;
 
 import android.content.Context;
+import android.graphics.Typeface;
 
 import com.squareup.leakcanary.LeakCanary;
 import com.squareup.leakcanary.RefWatcher;
+import com.zhy.http.okhttp.OkHttpUtils;
 
 import org.litepal.LitePalApplication;
 
+import java.util.concurrent.TimeUnit;
+
+import okhttp3.OkHttpClient;
+
 public class MainApplication extends LitePalApplication {
-    private static Context mAppContext;
     private RefWatcher mRefWatcher;
 
+    //字体图标
     @Override
     public void onCreate() {
         super.onCreate();
-        mAppContext = this;
         mRefWatcher=LeakCanary.install(this);
+        ForegroundObserver.init(this);
+        initOkHttpUtils();
     }
 
     public static RefWatcher getRefWatcher(Context context) {
         MainApplication application = (MainApplication) context.getApplicationContext();
         return application.mRefWatcher;
     }
-    public static Context getAppContext() {
-        if (mAppContext == null) throw new RuntimeException();
 
-        return mAppContext;
+    private void initOkHttpUtils() {
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .build();
+        OkHttpUtils.initClient(okHttpClient);
     }
-
 }

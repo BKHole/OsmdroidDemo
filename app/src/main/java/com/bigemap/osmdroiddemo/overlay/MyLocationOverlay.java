@@ -7,7 +7,6 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
-import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
@@ -39,7 +38,6 @@ import org.osmdroid.views.overlay.IOverlayMenuProvider;
 import org.osmdroid.views.overlay.Overlay;
 import org.osmdroid.views.overlay.compass.IOrientationConsumer;
 import org.osmdroid.views.overlay.compass.IOrientationProvider;
-import org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.IMyLocationConsumer;
 import org.osmdroid.views.overlay.mylocation.IMyLocationProvider;
@@ -54,7 +52,6 @@ import java.util.LinkedList;
 public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
         IOverlayMenuProvider, Overlay.Snappable, IOrientationConsumer {
 
-    private Paint mPaint = new Paint();
     private Paint mCirclePaint = new Paint();
 
     private final float mScale;
@@ -83,11 +80,6 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
     private boolean mIsFollowing = false; // follow location updates
     private boolean mDrawAccuracyEnabled = true;
 
-    /**
-     * Coordinates the feet of the person are located scaled for display density.
-     */
-    private final PointF mPersonHotspot;
-
     private float mDirectionArrowCenterX;
     private float mDirectionArrowCenterY;
 
@@ -112,8 +104,6 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
     private final Matrix mCompassMatrix = new Matrix();
     private boolean mIsCompassEnabled;
     private float mAzimuth = Float.NaN;
-    private float mCompassCenterX;
-    private float mCompassCenterY;
 
     private float mCompassFrameCenterX;
     private float mCompassFrameCenterY;
@@ -136,7 +126,6 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
         mMapController = mapView.getController();
         mCirclePaint.setARGB(0, 100, 100, 255);
         mCirclePaint.setAntiAlias(true);
-        mPaint.setFilterBitmap(true);
 
         final WindowManager windowManager = (WindowManager) mapView.getContext()
                 .getSystemService(Context.WINDOW_SERVICE);
@@ -144,21 +133,17 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
 
         setCompass(getBitmapFromVectorDrawable(mapView.getContext(), R.drawable.ic_vector_compass));
         setDirectionArrow(BitmapFactory.decodeResource(mapView.getResources(), R.drawable.img_point));
-//        setCompassCenter(mDirectionArrowCenterX, mDirectionArrowCenterY);
-
-        // Calculate position of person icon's feet, scaled to screen density
-        mPersonHotspot = new PointF(24.0f * mScale + 0.5f, 39.0f * mScale + 0.5f);
 
         mHandler = new Handler(Looper.getMainLooper());
         setMyLocationProvider(myLocationProvider);
-        setOrientationProvider(new InternalCompassOrientationProvider(mapView.getContext()));
+//        setOrientationProvider(new InternalCompassOrientationProvider(mapView.getContext()));
     }
 
 
     /**
      * fix for https://github.com/osmdroid/osmdroid/issues/249
      *
-     * @param directionArrowBitmap  定位图标
+     * @param directionArrowBitmap 定位图标
      */
     public void setDirectionArrow(final Bitmap directionArrowBitmap) {
         this.mDirectionArrowBitmap = directionArrowBitmap;
@@ -206,8 +191,8 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
             mMyLocationProvider.destroy();
 
         mMyLocationProvider = null;
-        mOrientationProvider = null;
-
+        sSmoothPaint = null;
+        this.disableCompass();
         super.onDetach(mapView);
     }
 
@@ -246,10 +231,6 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
             stopLocationProvider();
 
         mMyLocationProvider = myLocationProvider;
-    }
-
-    public void setPersonHotspot(float x, float y) {
-        mPersonHotspot.set(x, y);
     }
 
     private void drawMyLocation(final Canvas canvas, final MapView mapView, final Location lastFix, final float bearing) {
@@ -291,7 +272,7 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
         canvas.scale(1 / scaleX, 1 / scaleY, mMapCoordsTranslated.x, mMapCoordsTranslated.y);
         // Draw the bitmap
         canvas.drawBitmap(mDirectionArrowBitmap, mMapCoordsTranslated.x - mDirectionArrowCenterX,
-                mMapCoordsTranslated.y - mDirectionArrowCenterY, mPaint);
+                mMapCoordsTranslated.y - mDirectionArrowCenterY, sSmoothPaint);
         canvas.restore();
 
 //        mCompassMatrix.setRotate(-bearing, mCompassFrameCenterX, mCompassFrameCenterY);
@@ -301,7 +282,6 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
         if (isCompassEnabled()) {
             canvas.save();
             canvas.rotate(-bearing, mMapCoordsTranslated.x, mMapCoordsTranslated.y);
-//        canvas.concat(mMatrix);
             canvas.scale(1 / scaleX, 1 / scaleY, mMapCoordsTranslated.x, mMapCoordsTranslated.y);
             canvas.drawBitmap(mCompassFrameBitmap, mMapCoordsTranslated.x - mCompassFrameCenterX,
                     mMapCoordsTranslated.y - mCompassFrameCenterY, sSmoothPaint);
@@ -344,8 +324,6 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
     private void drawCompass(final Canvas canvas, final float bearing, final Rect screenRect) {
         final Projection proj = mMapView.getProjection();
         proj.toPixelsFromProjected(mMapCoordsProjected, mMapCoordsTranslated);
-        final float centerX = mCompassCenterX * mScale;
-        final float centerY = mCompassCenterY * mScale;
 
         mCompassMatrix.setRotate(-bearing, mCompassFrameCenterX, mCompassFrameCenterY);
         mCompassMatrix.postTranslate(-mCompassFrameCenterX, -mCompassFrameCenterY);
@@ -583,9 +561,9 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
             this.getMyLocationDrawingBounds(mMapView.getZoomLevel(), mLocation, mMyLocationRect);
 
             // If we had a previous location, merge in those bounds too
-            if (oldLocation != null) {
-                mMyLocationRect.union(mMyLocationPreviousRect);
-            }
+//            if (oldLocation != null) {
+//                mMyLocationRect.union(mMyLocationPreviousRect);
+//            }
 
             final int left = mMyLocationRect.left;
             final int top = mMyLocationRect.top;
@@ -622,17 +600,17 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
     /**
      * 坐标系转换
      *
-     * @param originLocation
+     * @param gpsLocation gps坐标
      * @return
      */
-    private Location convertLocation(Location originLocation) {
+    private Location convertLocation(Location gpsLocation) {
         Location convertedLocation = null;
         switch (mTileSource) {
             case Constant.GOOGLE_MAP:
-                convertedLocation = PositionUtils.gps_To_Gcj02(originLocation);
+                convertedLocation = PositionUtils.gps_To_Gcj02(gpsLocation);
                 break;
             case Constant.OSM:
-                convertedLocation = originLocation;
+                convertedLocation = gpsLocation;
                 break;
         }
         return convertedLocation;
@@ -735,6 +713,10 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
         return mIsCompassEnabled;
     }
 
+    public IOrientationProvider getOrientationProvider() {
+        return mOrientationProvider;
+    }
+
     public void setOrientationProvider(IOrientationProvider orientationProvider) throws RuntimeException {
         if (orientationProvider == null)
             throw new RuntimeException(
@@ -754,23 +736,11 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
 
     private void invalidateCompass() {
         Rect screenRect = mMapView.getProjection().getScreenRect();
-        final int frameLeft = screenRect.left
-                + (int) Math.ceil((mCompassCenterX - mCompassFrameCenterX) * mScale);
-        final int frameTop = screenRect.top
-                + (int) Math.ceil((mCompassCenterY - mCompassFrameCenterY) * mScale);
-        final int frameRight = screenRect.left
-                + (int) Math.ceil((mCompassCenterX + mCompassFrameCenterX) * mScale);
-        final int frameBottom = screenRect.top
-                + (int) Math.ceil((mCompassCenterY + mCompassFrameCenterY) * mScale);
+        int left = screenRect.left + (int) Math.ceil(mCompassFrameCenterX * mScale);
+        int top = screenRect.top + (int) Math.ceil(mCompassFrameCenterY * mScale);
 
         // Expand by 2 to cover stroke width
-        mMapView.postInvalidateMapCoordinates(frameLeft - 2, frameTop - 2, frameRight + 2,
-                frameBottom + 2);
-    }
-
-    private void setCompassCenter(final float x, final float y) {
-        mCompassCenterX = x;
-        mCompassCenterY = y;
+        mMapView.postInvalidateMapCoordinates(left - 2, top - 2, left + 2, top + 2);
     }
 
     private int getDisplayOrientation() {
