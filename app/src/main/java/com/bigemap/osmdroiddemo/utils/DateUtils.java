@@ -13,21 +13,6 @@ import java.util.TimeZone;
  */
 
 public class DateUtils {
-    /**
-     *  开始定位
-     */
-    public final static int MSG_LOCATION_START = 0;
-    /**
-     * 定位完成
-     */
-    public final static int MSG_LOCATION_FINISH = 1;
-    /**
-     * 停止定位
-     */
-    public final static int MSG_LOCATION_STOP= 2;
-
-    public final static String KEY_URL = "URL";
-    public final static String URL_H5LOCATION = "file:///android_asset/location.html";
 
     private static SimpleDateFormat GMTTimeFormatter = new SimpleDateFormat(
             "yyyy-MM-dd'T'HH:mm:ss'Z'");

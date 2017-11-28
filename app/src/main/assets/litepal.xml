@@ -5,7 +5,6 @@
     <version value="1"></version>
 
     <list>
-        <mapping class="com.bigemap.osmdroiddemo.entity.Track" />
-        <mapping class="com.bigemap.osmdroiddemo.entity.Location" />
+        <mapping class="com.bigemap.osmdroiddemo.entity.OfflineMap" />
     </list>
 </litepal>

@@ -1,230 +1,168 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.v4.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <org.osmdroid.views.MapView
-        android:id="@+id/mapView"
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:focusable="true"
+        android:focusableInTouchMode="true">
 
-    <include layout="@layout/view_search_box" />
+        <org.osmdroid.views.MapView
+            android:id="@+id/mapView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
-    <LinearLayout
-        android:id="@+id/layout_map_source"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="10dp"
-        android:layout_marginTop="65dp"
-        android:animateLayoutChanges="true"
-        android:background="@drawable/bg_map_source"
-        android:orientation="vertical">
+        <include layout="@layout/view_search_box" />
 
-        <ImageView
-            android:id="@+id/btn_map_mode"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:scaleType="centerInside" />
-
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/list_map_source"
+        <include layout="@layout/view_map_source"
+            android:id="@+id/layout_map_source"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:visibility="gone" />
-    </LinearLayout>
+            android:layout_marginLeft="10dp"
+            android:layout_marginTop="65dp"/>
 
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="65dp"
-        android:layout_toRightOf="@id/layout_map_source"
-        android:background="@drawable/bg_map_source">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="65dp"
+            android:layout_toRightOf="@id/layout_map_source"
+            android:background="@drawable/bg_map_source">
 
-        <TextView
-            android:id="@+id/tv_map_type_normal"
-            android:layout_width="35dp"
-            android:layout_height="30dp"
-            android:background="@drawable/bg_map_type_left"
-            android:gravity="center"
-            android:text="地图"
-            android:visibility="gone" />
+            <TextView
+                android:id="@+id/tv_map_type_normal"
+                android:layout_width="35dp"
+                android:layout_height="30dp"
+                android:background="@drawable/bg_map_type_left"
+                android:gravity="center"
+                android:text="地图"
+                android:visibility="gone" />
 
-        <TextView
-            android:id="@+id/tv_map_type_satellite"
-            android:layout_width="35dp"
-            android:layout_height="30dp"
-            android:background="@drawable/bg_map_type_right"
-            android:gravity="center"
-            android:text="卫星"
-            android:visibility="gone" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="120dp"
-        android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:animateLayoutChanges="true"
-        android:visibility="gone">
-
-        <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-            android:id="@+id/scroll_layers_content"
-            android:layout_width="100dp"
-            android:layout_height="120dp"
-            android:background="@color/darkgrey"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <CheckBox
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="我的图层"
-                android:textSize="13sp" />
-        </ScrollView>
+            <TextView
+                android:id="@+id/tv_map_type_satellite"
+                android:layout_width="35dp"
+                android:layout_height="30dp"
+                android:background="@drawable/bg_map_type_right"
+                android:gravity="center"
+                android:text="卫星"
+                android:visibility="gone" />
+        </LinearLayout>
 
         <ImageView
             android:id="@+id/iv_layers_import"
             android:layout_width="15dp"
             android:layout_height="74dp"
+            android:layout_centerVertical="true"
             android:layout_gravity="center_vertical"
             android:src="@drawable/ic_layers_import" />
-    </LinearLayout>
 
-    <RelativeLayout
-        android:id="@+id/rl_center_prick"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:visibility="gone">
-
-        <ImageView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+        <RelativeLayout
+            android:id="@+id/rl_center_prick"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            app:srcCompat="@drawable/ic_vector_cross" />
+            android:visibility="gone">
 
-        <ImageView
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:layout_centerInParent="true"
-            app:srcCompat="@drawable/ic_vector_compass" />
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_centerInParent="true"
+                app:srcCompat="@drawable/ic_vector_cross" />
+
+            <ImageView
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_centerInParent="true"
+                app:srcCompat="@drawable/ic_vector_compass" />
+        </RelativeLayout>
+
+        <LinearLayout
+            android:id="@+id/edit_top_tool_ly"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_edit_tool"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/btn_edit_line"
+                android:layout_width="50dp"
+                android:layout_height="40dp"
+                android:background="@drawable/selector_edit_tool_left"
+                android:gravity="center"
+                android:text="路线" />
+
+            <TextView
+                android:id="@+id/btn_edit_shape"
+                android:layout_width="50dp"
+                android:layout_height="40dp"
+                android:background="@drawable/selector_edit_tool_middle"
+                android:gravity="center"
+                android:text="图形" />
+
+            <TextView
+                android:id="@+id/btn_edit_poi"
+                android:layout_width="50dp"
+                android:layout_height="40dp"
+                android:background="@drawable/selector_edit_tool_right"
+                android:gravity="center"
+                android:text="标记" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:orientation="vertical">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp">
+
+                <com.bigemap.osmdroiddemo.view.IconView
+                    android:id="@+id/btn_location"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_alignParentLeft="true"
+                    android:layout_marginLeft="15dp"
+                    android:background="@drawable/selector_btn_common"
+                    android:gravity="center"
+                    android:text="@string/location"
+                    android:textSize="35sp" />
+
+                <com.bigemap.osmdroiddemo.view.IconView
+                    android:id="@+id/btn_track_record"
+                    android:layout_width="45dp"
+                    android:layout_height="45dp"
+                    android:layout_centerInParent="true"
+                    android:background="@drawable/bg_track_recorder"
+                    android:gravity="center"
+                    android:text="@string/track_start"
+                    android:textColor="@color/white"
+                    android:textSize="30sp" />
+            </RelativeLayout>
+
+            <include
+                android:id="@+id/view_main_bottom"
+                layout="@layout/view_main_bottom"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_alignParentBottom="true" />
+
+            <include
+                layout="@layout/view_edit_bottom"
+                android:visibility="gone" />
+        </LinearLayout>
     </RelativeLayout>
 
-    <com.bigemap.osmdroiddemo.view.IconView
-        android:id="@+id/btn_track_record"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:layout_centerHorizontal="true"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="70dp"
-        android:background="@drawable/bg_track_recorder"
-        android:text="@string/track_start"
-        android:textColor="@color/white"
-        android:gravity="center"
-        android:textSize="40sp" />
-
-    <LinearLayout
-        android:id="@+id/edit_top_tool_ly"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="6dp"
-        android:background="@drawable/bg_edit_tool"
-        android:visibility="gone">
-
-        <TextView
-            android:id="@+id/btn_edit_track"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@drawable/selector_edit_tool_left"
-            android:gravity="center"
-            android:text="轨迹" />
-
-        <TextView
-            android:id="@+id/btn_edit_shape"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:gravity="center"
-            android:background="@drawable/selector_edit_tool_middle"
-            android:text="图形" />
-
-        <TextView
-            android:id="@+id/btn_edit_measure"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:gravity="center"
-            android:background="@drawable/selector_edit_tool_middle"
-            android:text="测量" />
-
-        <TextView
-            android:id="@+id/btn_edit_close"
-            android:layout_width="38dp"
-            android:layout_height="40dp"
-            android:background="@drawable/selector_edit_tool_right"
-            android:gravity="center"
-            android:text="关闭" />
-    </LinearLayout>
-
-    <com.bigemap.osmdroiddemo.view.IconView
-        android:id="@+id/btn_location"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="70dp"
-        android:layout_marginLeft="20dp"
-        android:layout_marginTop="10dp"
-        android:background="@drawable/selector_btn_common"
-        android:text="@string/location"
-        android:textSize="40sp" />
-
-    <com.bigemap.osmdroiddemo.view.IconView
-        android:id="@+id/btn_empty"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="70dp"
-        android:layout_marginRight="20dp"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:text="@string/empty"
-        android:background="@drawable/selector_btn_common"
-        android:textSize="40sp"
-        />
-
-    <LinearLayout
-        android:id="@+id/edit_bottom_tool_ly"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/view_main_bottom"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="50dp"
-        android:visibility="gone">
-
-        <ImageView
-            android:id="@+id/btn_edit_undo"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/btn_img_undo" />
-
-        <ImageView
-            android:id="@+id/btn_edit_prick"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginLeft="10dp"
-            android:src="@drawable/btn_img_edit_prick" />
-
-        <ImageView
-            android:id="@+id/btn_edit_save"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginLeft="10dp"
-            android:src="@drawable/btn_img_edit_favorite_prick" />
-    </LinearLayout>
-
     <include
-        android:id="@+id/view_main_bottom"
-        layout="@layout/view_main_bottom"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_alignParentBottom="true" />
-</RelativeLayout>
+        layout="@layout/view_my_layers"
+        android:layout_width="180dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start" />
+</android.support.v4.widget.DrawerLayout>

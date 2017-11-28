@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="40dp">
+
+    <com.bigemap.osmdroiddemo.view.IconView
+        android:id="@+id/item_offline_icon"
+        android:layout_width="36dp"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:text="@string/icon_offline_map_source"
+        android:textSize="36sp" />
+
+    <TextView
+        android:id="@+id/item_offline_name"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:maxLength="7"
+        android:textAppearance="@style/Base.TextAppearance.AppCompat.Small"
+        tools:text="测试" />
+
+</LinearLayout>

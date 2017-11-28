@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/list_file_select"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:id="@+id/tv_offline_no_data"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="没有离线数据，请将下载的离线电子地图导入/AOsmDemo/offline/electronic目录下，离线卫星地图导入/AOsmDemo/offline/satellite目录下"
+        android:visibility="gone"/>
+
+</RelativeLayout>

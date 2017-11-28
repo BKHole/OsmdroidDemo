@@ -3,14 +3,14 @@
     <item android:state_selected="true">
         <shape>
             <!-- 矩形的圆角弧度 -->
-            <corners android:bottomLeftRadius="15dp" android:topLeftRadius="15dp" />
+            <corners android:bottomLeftRadius="8dp" android:topLeftRadius="8dp" />
             <!-- 矩形的填充色 -->
             <solid android:color="@color/colorAccent" />
         </shape>
     </item>
     <item>
         <shape>
-            <corners android:bottomLeftRadius="15dp" android:topLeftRadius="15dp"/>
+            <corners android:bottomLeftRadius="8dp" android:topLeftRadius="8dp"/>
             <solid android:color="@color/blue"/>
         </shape>
     </item>

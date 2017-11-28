@@ -9,8 +9,9 @@ import android.os.Environment;
 
 public class Constant {
     public static final String PREFS_NAME = "com.bigemap.prefs";
-    public static final String PREFS_TILE_SOURCE = "tilesource";
-    public static final String PREFS_MAP_SOURCE = "mapsource";
+    public static final String PREFS_TILE_SOURCE = "tilesource";//瓦片源
+    public static final String PREFS_MAP_SOURCE = "mapsource";//在线地图选择
+    public static final String PREFS_OFFLINE_MAP_SOURCE = "offlinemapsource";//离线线地图选择
     /**
      * as String because we cannot use double in Preferences, only float
      * and float is not accurate enough
@@ -20,9 +21,12 @@ public class Constant {
     public static final String PREFS_ORIENTATION = "orientation";
     public static final String PREFS_ZOOM_LEVEL = "zoomLevel";
     public static final String PREFS_ZOOM_LEVEL_DOUBLE = "zoomLevelDouble";
-    public static final String PREFS_SHOW_LOCATION = "showLocation";
     public static final String PREFS_NORMAL_MAP_STATE = "normalMapState";
     public static final String PREFS_SATELLITE_STATE = "satelliteState";
+    public static final String PREFS_OFFLINE_ELECTRIC_STATE = "offlineElectric";
+    public static final String PREFS_OFFLINE_SATELLITE_STATE = "offlineSatellite";
+    public static final String PREFS_OFFLINE_ELE_PATH = "offlineElePath";
+    public static final String PREFS_OFFLINE_SATEL_PATH = "offlineSatelPath";
     /**
      * map source url
      * m:路线图（r）
@@ -38,16 +42,23 @@ public class Constant {
      * tile source
      */
     public static final int GOOGLE_MAP = 0;//GOOGLE_MAP
-    public static final int GOOGLE_SATELLITE = 1;//GOOGLE_SATELLITE
     public static final int OSM = 1;//OSM
 
     /**
+     * track type
+     */
+    public static final String POLYGON = "polygon";
+    public static final String POLYLINE = "line";
+    public static final String POI = "poi";
+    /**
      * file storage path
      */
-    private static String APP_BASE_PATH = Environment.getExternalStorageDirectory().getPath() + "/AOsmDemo";
-    public static String DATABASE_PATH = "map-tracks.db";
-    public static String IMPORT_KML_PATH = APP_BASE_PATH + "/imports";
-    public static String EXPORT_KML_PATH = APP_BASE_PATH + "/exports";
+    public static String APP_BASE_PATH = Environment.getExternalStorageDirectory().getPath() + "/AOsmDemo";
+    public static String IMPORT_KML_PATH = APP_BASE_PATH + "/kml";
+    public static String OFFLINE_MAP_PATH = APP_BASE_PATH + "/offline";
+    public static String ELECTRONIC_MAP_PATH = OFFLINE_MAP_PATH + "/electronic";
+    public static String SATELLITE_MAP_PATH = OFFLINE_MAP_PATH + "/satellite";
+    public static String TILE_CACHE = OFFLINE_MAP_PATH + "/cache";
 
     public static final String POST_URL="http://kh.bigemap.com/loginm.php";
 }

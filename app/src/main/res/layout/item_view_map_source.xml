@@ -1,29 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:clickable="true"
     android:gravity="center"
     android:orientation="vertical">
 
-    <FrameLayout
-        android:id="@+id/ll_map_source"
-        android:layout_width="41dp"
-        android:layout_height="41dp"
-        android:layout_marginTop="5dp"
-        >
-
-        <ImageView
-            android:id="@+id/iv_map_source_icon"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_gravity="center"
-            android:scaleType="centerInside"
-            android:background="@drawable/selector_map_source"
-            android:contentDescription="图标"
-            android:src="@drawable/ic_map_amap" />
-    </FrameLayout>
+    <ImageView
+        android:id="@+id/iv_map_source_icon"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="center"
+        android:background="@drawable/selector_map_source"
+        android:contentDescription="图标"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_map_amap" />
 
     <TextView
         android:id="@+id/tv_map_source_name"

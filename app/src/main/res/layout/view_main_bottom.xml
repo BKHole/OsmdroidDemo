@@ -76,12 +76,35 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/main_tab_mine"
+        android:id="@+id/main_tab_offline"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:background="@drawable/selector_tab_common"
         android:orientation="vertical">
+
+        <com.bigemap.osmdroiddemo.view.IconView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/offline"
+            android:textSize="35sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="离线"
+            android:textSize="12sp" />
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/main_tab_mine"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:background="@drawable/selector_tab_common"
+        android:orientation="vertical"
+        android:visibility="gone">
 
         <com.bigemap.osmdroiddemo.view.IconView
             android:layout_width="match_parent"

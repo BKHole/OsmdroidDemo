@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:padding="2dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="地图名称"
+            android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium" />
+
+        <EditText
+            android:id="@+id/et_offline_map_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="请输入地图名称"
+            android:maxLength="50"
+            android:textAppearance="@style/Base.TextAppearance.AppCompat.Small.Inverse" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="描述"
+            android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium" />
+
+        <EditText
+            android:id="@+id/et_offline_map_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="请输入描述内容"
+            android:maxLength="200"
+            android:textAppearance="@style/Base.TextAppearance.AppCompat.Small.Inverse" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="电子地图地址"
+                android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium" />
+
+            <TextView
+                android:id="@+id/tv_offline_map_path"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:gravity="center_vertical"
+                android:background="@drawable/selector_btn_common"
+                android:text="点击选择"
+                android:textAppearance="@style/Base.TextAppearance.AppCompat.Small" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="卫星地图地址"
+                android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium" />
+
+            <TextView
+                android:id="@+id/tv_offline_satellite_path"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:gravity="center_vertical"
+                android:text="点击选择"
+                android:background="@drawable/selector_btn_common"
+                android:textAppearance="@style/Base.TextAppearance.AppCompat.Small" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tv_offline_map_save"
+        android:layout_width="match_parent"
+        android:layout_height="45dp"
+        android:layout_alignParentBottom="true"
+        android:layout_margin="5dp"
+        android:background="@drawable/selector_tv_common"
+        android:gravity="center"
+        android:text="保存"
+        android:textColor="@color/white" />
+</RelativeLayout>

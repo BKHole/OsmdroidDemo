@@ -106,6 +106,13 @@ public class PositionUtils {
         return new GeoPoint(latitude, longitude);
     }
 
+    public static List<GeoPoint> gcjToGps(List<GeoPoint> geoPoints){
+        List<GeoPoint> points=new ArrayList<>();
+        for (GeoPoint geoPoint: geoPoints){
+            points.add(gcj_To_Gps84(geoPoint));
+        }
+        return points;
+    }
     /**
      * 火星坐标系 (GCJ-02) 与百度坐标系 (BD-09) 的转换算法 将 GCJ-02 坐标转换成 BD-09 坐标
      *
@@ -195,11 +202,34 @@ public class PositionUtils {
         return ret;
     }
 
-    public static ArrayList<GeoPoint> wgsToGcj(ArrayList<Location> locations){
+    public static ArrayList<GeoPoint> wgsToGcj(List<Location> locations){
         ArrayList<GeoPoint> geoPoints=new ArrayList<>();
         for (Location location: locations){
             geoPoints.add(gps84_To_Gcj02(location));
         }
         return geoPoints;
+    }
+
+    public static List<GeoPoint> wgsToGcj02(List<GeoPoint> locations){
+        List<GeoPoint> geoPoints=new ArrayList<>();
+        for (GeoPoint location: locations){
+            geoPoints.add(gps84_To_Gcj02(location));
+        }
+        return geoPoints;
+    }
+
+    /**
+     * from String to GeoPoint
+     * @param data string
+     * @return GeoPoint
+     */
+    public static GeoPoint stringToPoint(String data) {
+        GeoPoint geoPoint = null;
+        data = data.trim();
+        String[] split = data.split(",");
+        if (split.length > 1) {
+            geoPoint = new GeoPoint(Double.valueOf(split[1].trim()), Double.valueOf(split[0].trim()));
+        }
+        return geoPoint;
     }
 }

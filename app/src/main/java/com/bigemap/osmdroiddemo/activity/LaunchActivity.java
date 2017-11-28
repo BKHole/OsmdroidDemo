@@ -19,23 +19,24 @@ import android.widget.TextView;
 
 import com.bigemap.osmdroiddemo.R;
 import com.bigemap.osmdroiddemo.constants.Constant;
+import com.bigemap.osmdroiddemo.utils.binding.Bind;
 
 import java.io.File;
 
 public class LaunchActivity extends BaseActivity {
 
     final private int REQUEST_CODE_ASK_WRITING_PERMISSIONS = 126;
-    private ImageView launchImage;
     private AnimationSet animationSet;
     private MyCountDownTimer timer;
+    @Bind(R.id.iv_start_title)
+    private ImageView launchImage;
+    @Bind(R.id.tv_time)
     private TextView timerTv;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_launch);
-        launchImage = $(R.id.iv_start_title);
-        timerTv = $(R.id.tv_time);
         initAnimation();
         initEvent();
     }
@@ -76,7 +77,6 @@ public class LaunchActivity extends BaseActivity {
                     initFile();
                     loadHomePage();
                 }
-
             }
 
             @Override
@@ -98,9 +98,13 @@ public class LaunchActivity extends BaseActivity {
                 if (!file.exists()) {
                     file.mkdirs();
                 }
-                file = new File(Constant.EXPORT_KML_PATH);
-                if (!file.exists()) {
-                    file.mkdirs();
+                File map = new File(Constant.ELECTRONIC_MAP_PATH);
+                if (!map.exists()) {
+                    map.mkdirs();
+                }
+                File satellite = new File(Constant.SATELLITE_MAP_PATH);
+                if (!satellite.exists()) {
+                    satellite.mkdirs();
                 }
             }
         }.start();

@@ -19,11 +19,7 @@ import android.util.Log;
 
 import com.bigemap.osmdroiddemo.R;
 import com.bigemap.osmdroiddemo.activity.MainActivity;
-import com.bigemap.osmdroiddemo.entity.Track;
 import com.bigemap.osmdroiddemo.utils.PermissionUtils;
-import com.bigemap.osmdroiddemo.utils.PositionUtils;
-
-import org.osmdroid.util.GeoPoint;
 
 import java.util.ArrayList;
 
@@ -55,7 +51,6 @@ public class MyLocationService extends Service implements LocationListener {
         acquireWakeLock();
         if (PermissionUtils.checkLocationPermission(this)) {
             locationManager.requestLocationUpdates(gpsProvider, UPDATE_TIME, UPDATE_DISTANCE, this);
-//            locationManager.requestLocationUpdates(networkProvider, 2000, 0, this);
         }
         return super.onStartCommand(intent, flags, startId);
     }
@@ -177,13 +172,12 @@ public class MyLocationService extends Service implements LocationListener {
 
     /**
      * 将数据传递到activity中
-     *
      * @param list 定位数据列表
      */
     private void sendLocation(ArrayList<Location> list) {
-        ArrayList<GeoPoint> convertedList = PositionUtils.wgsToGcj(list);
+//        ArrayList<GeoPoint> convertedList = PositionUtils.wgsToGcj(list);
         Intent intent = new Intent();
-        intent.putParcelableArrayListExtra("saveGps", convertedList);
+        intent.putParcelableArrayListExtra("saveGps", list);
         intent.setAction("com.bigemap.osmdroiddemo.service.intent.locationList");
         sendBroadcast(intent);
     }

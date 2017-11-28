@@ -50,11 +50,17 @@
             android:name="com.amap.api.v2.apikey"
             android:value="bf5207e0ee05765cbd26025d82748b42" />
         <!-- 高德 -->
-
+        <activity android:name=".activity.BaseActivity"/>
         <activity
             android:name=".activity.LaunchActivity"
             android:screenOrientation="nosensor"
-            android:theme="@style/AppTheme.Full">
+            android:theme="@style/AppTheme.Full" >
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
 
         </activity>
         <activity
@@ -62,29 +68,22 @@
             android:launchMode="singleTask"
             android:screenOrientation="nosensor"
             android:theme="@style/AppTheme.NoTitle">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+
         </activity>
-        <activity
-            android:name=".activity.TrackRecordActivity"
-            android:screenOrientation="nosensor" />
 
         <service
             android:name=".service.MyLocationService"
             android:enabled="true" />
 
         <activity
-            android:name=".activity.TrackEditActivity"
+            android:name=".activity.OfflineMapChooseActivity"
             android:screenOrientation="nosensor" />
         <activity
-            android:name=".activity.PointSearchActivity"
-            android:screenOrientation="nosensor"
-            android:theme="@style/AppTheme.NoTitle" />
-        <activity
-            android:name=".kml.FileManagerActivity"
+            android:name=".activity.MyTrackActivity"
             android:screenOrientation="nosensor" />
+        <activity android:name=".activity.TestActivity">
+
+        </activity>
     </application>
 
 </manifest>

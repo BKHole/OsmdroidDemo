@@ -101,7 +101,6 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
     private final Display mDisplay;
     private IOrientationProvider mOrientationProvider;
     private Bitmap mCompassFrameBitmap;
-    private final Matrix mCompassMatrix = new Matrix();
     private boolean mIsCompassEnabled;
     private float mAzimuth = Float.NaN;
 
@@ -138,7 +137,6 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
         setMyLocationProvider(myLocationProvider);
 //        setOrientationProvider(new InternalCompassOrientationProvider(mapView.getContext()));
     }
-
 
     /**
      * fix for https://github.com/osmdroid/osmdroid/issues/249
@@ -264,20 +262,16 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
 
         canvas.save();
         // Rotate the icon if we have a GPS fix, take into account if the map is already rotated
-        float mapRotation = lastFix.getBearing();
-        if (mapRotation >= 360.0f)
-            mapRotation = mapRotation - 360f;
-        canvas.rotate(mapRotation, mMapCoordsTranslated.x, mMapCoordsTranslated.y);
+//        float mapRotation = lastFix.getBearing();
+//        if (mapRotation >= 360.0f)
+//            mapRotation = mapRotation - 360f;
+//        canvas.rotate(mapRotation, mMapCoordsTranslated.x, mMapCoordsTranslated.y);
         // Counteract any scaling that may be happening so the icon stays the same size
         canvas.scale(1 / scaleX, 1 / scaleY, mMapCoordsTranslated.x, mMapCoordsTranslated.y);
         // Draw the bitmap
         canvas.drawBitmap(mDirectionArrowBitmap, mMapCoordsTranslated.x - mDirectionArrowCenterX,
                 mMapCoordsTranslated.y - mDirectionArrowCenterY, sSmoothPaint);
         canvas.restore();
-
-//        mCompassMatrix.setRotate(-bearing, mCompassFrameCenterX, mCompassFrameCenterY);
-//        mCompassMatrix.setTranslate(-mCompassFrameCenterX, -mCompassFrameCenterY);
-//        mCompassMatrix.postTranslate(mMapCoordsTranslated.x, mMapCoordsTranslated.y);
 
         if (isCompassEnabled()) {
             canvas.save();
@@ -321,22 +315,6 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
         return reuse;
     }
 
-    private void drawCompass(final Canvas canvas, final float bearing, final Rect screenRect) {
-        final Projection proj = mMapView.getProjection();
-        proj.toPixelsFromProjected(mMapCoordsProjected, mMapCoordsTranslated);
-
-        mCompassMatrix.setRotate(-bearing, mCompassFrameCenterX, mCompassFrameCenterY);
-        mCompassMatrix.postTranslate(-mCompassFrameCenterX, -mCompassFrameCenterY);
-        mCompassMatrix.postTranslate(mMapCoordsTranslated.x, mMapCoordsTranslated.y);
-
-        canvas.save();
-        canvas.concat(proj.getInvertedScaleRotateCanvasMatrix());
-        canvas.concat(mCompassMatrix);
-//        canvas.scale(1 / scaleX, 1 / scaleY, mMapCoordsTranslated.x, mMapCoordsTranslated.y);
-        canvas.drawBitmap(mCompassFrameBitmap, 0, 0, sSmoothPaint);
-        canvas.restore();
-
-    }
     // ===========================================================
     // Methods from SuperClass/Interfaces
     // ===========================================================
@@ -350,10 +328,6 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
             drawMyLocation(c, mapView, mLocation, mAzimuth + getDisplayOrientation());
         }
 
-//        if (isCompassEnabled() && !Float.isNaN(mAzimuth)) {
-//            drawCompass(c, mAzimuth + getDisplayOrientation(), mapView.getProjection()
-//                    .getScreenRect());
-//        }
     }
 
     @Override
@@ -561,9 +535,9 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
             this.getMyLocationDrawingBounds(mMapView.getZoomLevel(), mLocation, mMyLocationRect);
 
             // If we had a previous location, merge in those bounds too
-//            if (oldLocation != null) {
-//                mMyLocationRect.union(mMyLocationPreviousRect);
-//            }
+            if (oldLocation != null) {
+                mMyLocationRect.union(mMyLocationPreviousRect);
+            }
 
             final int left = mMyLocationRect.left;
             final int top = mMyLocationRect.top;

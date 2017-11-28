@@ -1,11 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="120dp"
-    android:layout_height="120dp"
-    android:orientation="vertical">
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ly_content"
+    android:layout_width="180dp"
+    android:layout_height="match_parent"
+    android:background="@color/translucent_white_40">
 
-    <CheckBox
-        android:layout_width="wrap_content"
+    <TextView
+        android:id="@+id/drawer_layout_title"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="我的图层" />
-</ScrollView>
+        android:background="@color/blue"
+        android:text="图层管理"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="@color/white" />
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/list_layers_content"
+        android:layout_below="@id/drawer_layout_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_map_source" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_alignParentBottom="true"
+        android:background="@color/white"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/btn_edit_delete"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="@drawable/selector_btn_common"
+            android:gravity="center"
+            android:text="删除" />
+
+        <TextView
+            android:id="@+id/btn_edit_rename"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="@drawable/selector_btn_common"
+            android:gravity="center"
+            android:text="编辑" />
+
+        <TextView
+            android:id="@+id/btn_edit_save"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="@drawable/selector_btn_common"
+            android:gravity="center"
+            android:text="保存" />
+    </LinearLayout>
+</RelativeLayout>

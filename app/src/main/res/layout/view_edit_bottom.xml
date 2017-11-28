@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/edit_bottom_tool_ly"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:layout_alignParentBottom="true"
+    android:layout_centerHorizontal="true"
+    android:gravity="center"
+    android:background="@color/white">
+
+    <TextView
+        android:id="@+id/btn_edit_undo"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="40dp"
+        android:background="@drawable/selector_btn_common"
+        android:gravity="center"
+        android:text="撤销" />
+
+    <TextView
+        android:id="@+id/btn_edit_empty"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="40dp"
+        android:background="@drawable/selector_btn_common"
+        android:gravity="center"
+        android:text="清空" />
+
+    <TextView
+        android:id="@+id/btn_edit_finish"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="40dp"
+        android:background="@drawable/selector_btn_common"
+        android:gravity="center"
+        android:text="完成" />
+
+    <TextView
+        android:id="@+id/btn_edit_close"
+        android:layout_width="0dp"
+        android:layout_height="40dp"
+        android:layout_weight="1"
+        android:background="@drawable/selector_btn_common"
+        android:gravity="center"
+        android:text="关闭" />
+</LinearLayout>

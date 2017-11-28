@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="45dp"
+        android:gravity="center_vertical">
+
+        <com.bigemap.osmdroiddemo.view.IconView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:gravity="center"
+            android:text="@string/file_directory"
+            android:textSize="30sp" />
+
+        <TextView
+            android:id="@+id/tv_file_manager_path"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="marquee"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:gravity="center"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:padding="1dp"
+            android:scrollHorizontally="true"
+            android:singleLine="true"
+            android:textSize="18sp" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="#eee" />
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/list_file_manager"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:longClickable="true" />
+</LinearLayout>

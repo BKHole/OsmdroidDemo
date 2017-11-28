@@ -4,16 +4,22 @@ import android.graphics.Bitmap;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import com.bigemap.osmdroiddemo.entity.Result;
 import com.zhy.http.okhttp.OkHttpUtils;
 import com.zhy.http.okhttp.callback.BitmapCallback;
 import com.zhy.http.okhttp.callback.FileCallBack;
 import com.zhy.http.okhttp.callback.StringCallback;
+
+import org.osmdroid.util.BoundingBox;
+import org.osmdroid.util.GeoPoint;
 
 import java.io.File;
 
 import okhttp3.Call;
 
 public class HttpClient {
+
+    private static final String TIP_URL="http://ditu.amap.com/service/poiTipslite";
 
     public static void downloadFile(String url, String destFileDir, String destFileName, @Nullable final HttpCallback<File> callback) {
         OkHttpUtils.get().url(url).build()
@@ -71,5 +77,28 @@ public class HttpClient {
         OkHttpUtils.post().url(url)
                 .addParams("type", type)
                 .addParams("imei", imei).build().execute(callback);
+    }
+
+    public static void getTip(BoundingBox boundingBox,String keyword, @NonNull final HttpCallback<Result> callback){
+        String geoobj=boundingBox.getLonWest()+"|"+boundingBox.getLatNorth()+"|"+boundingBox.getLonEast()+"|"+boundingBox.getLatSouth();
+        OkHttpUtils.get().url(TIP_URL)
+                .addParams("geoobj", geoobj)
+                .addParams("words", keyword)
+                .build().execute(new JsonCallback<Result>(Result.class) {
+            @Override
+            public void onError(Call call, Exception e, int id) {
+                callback.onFail(e);
+            }
+
+            @Override
+            public void onResponse(Result response, int id) {
+                callback.onSuccess(response);
+            }
+
+            @Override
+            public void onAfter(int id) {
+                callback.onFinish();
+            }
+        });
     }
 }

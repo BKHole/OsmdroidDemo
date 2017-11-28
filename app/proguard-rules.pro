@@ -36,4 +36,23 @@
 -dontwarn okio.**
 -keep class okio.** { *; }
 
+# xstream
+-dontwarn com.thoughtworks.xstream.**
 
+# litepal
+-keep class org.litepal.** {
+    *;
+}
+
+-keep class * extends org.litepal.crud.DataSupport {
+    *;
+}
+
+#glide
+#-dontwarn com.bumptech.glide.**
+#-keep public class * implements com.bumptech.glide.module.GlideModule
+#-keep public class * extends com.bumptech.glide.module.AppGlideModule
+#-keep public enum com.bumptech.glide.load.resource.bitmap.ImageHeaderParser$** {
+#  **[] $VALUES;
+#  public *;
+#}

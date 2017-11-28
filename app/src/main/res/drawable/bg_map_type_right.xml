@@ -5,16 +5,16 @@
             <!--填充颜色-->
             <solid android:color="@color/blue" />
             <corners
-                android:topRightRadius="8dp"
-                android:bottomRightRadius="8dp"/>
+                android:topRightRadius="2dp"
+                android:bottomRightRadius="2dp"/>
         </shape>
     </item>
     <item>
         <shape android:shape="rectangle">
             <solid android:color="@color/translucent_white_20" />
             <corners
-                android:bottomRightRadius="8dp"
-                android:topRightRadius="8dp"/>
+                android:bottomRightRadius="2dp"
+                android:topRightRadius="2dp"/>
         </shape>
     </item>
 </selector>

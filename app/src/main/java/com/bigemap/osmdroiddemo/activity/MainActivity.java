@@ -8,66 +8,88 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import com.amap.api.services.core.AMapException;
-import com.amap.api.services.core.LatLonPoint;
-import com.amap.api.services.help.Inputtips;
-import com.amap.api.services.help.InputtipsQuery;
-import com.amap.api.services.help.Tip;
 import com.bigemap.osmdroiddemo.R;
-import com.bigemap.osmdroiddemo.TileSource.GoogleMapsTileSource;
-import com.bigemap.osmdroiddemo.TileSource.GoogleSatelliteTileSource;
 import com.bigemap.osmdroiddemo.adapter.MapSourceAdapter;
+import com.bigemap.osmdroiddemo.adapter.OfflineMapSourceAdapter;
+import com.bigemap.osmdroiddemo.adapter.SimpleTreeRecyclerAdapter;
 import com.bigemap.osmdroiddemo.constants.Constant;
-import com.bigemap.osmdroiddemo.entity.Location;
+import com.bigemap.osmdroiddemo.entity.BaseGraph;
 import com.bigemap.osmdroiddemo.entity.Map;
-import com.bigemap.osmdroiddemo.entity.Track;
+import com.bigemap.osmdroiddemo.entity.OfflineMap;
+import com.bigemap.osmdroiddemo.entity.Result;
+import com.bigemap.osmdroiddemo.entity.Tip;
+import com.bigemap.osmdroiddemo.entity.Title;
+import com.bigemap.osmdroiddemo.http.HttpCallback;
 import com.bigemap.osmdroiddemo.http.HttpClient;
+import com.bigemap.osmdroiddemo.kml.ReadKml;
+import com.bigemap.osmdroiddemo.kml.WriteKml;
 import com.bigemap.osmdroiddemo.overlay.MyLocationOverlay;
 import com.bigemap.osmdroiddemo.service.MyLocationService;
-import com.bigemap.osmdroiddemo.utils.AMapUtils;
+import com.bigemap.osmdroiddemo.tileSource.GoogleMapsTileSource;
+import com.bigemap.osmdroiddemo.tileSource.GoogleSatelliteTileSource;
+import com.bigemap.osmdroiddemo.tileSource.MBTileProvider;
+import com.bigemap.osmdroiddemo.treelist.Node;
+import com.bigemap.osmdroiddemo.treelist.OnTreeNodeClickListener;
 import com.bigemap.osmdroiddemo.utils.DateUtils;
+import com.bigemap.osmdroiddemo.utils.DialogUtils;
 import com.bigemap.osmdroiddemo.utils.MapMeasureUtils;
 import com.bigemap.osmdroiddemo.utils.PermissionUtils;
 import com.bigemap.osmdroiddemo.utils.PositionUtils;
-import com.bigemap.osmdroiddemo.utils.UIUtils;
+import com.bigemap.osmdroiddemo.utils.binding.Bind;
 import com.bigemap.osmdroiddemo.view.IconView;
+import com.bigemap.osmdroiddemo.viewholder.OnItemListener;
 import com.zhy.http.okhttp.callback.StringCallback;
 
 import org.litepal.crud.DataSupport;
+import org.osmdroid.config.Configuration;
+import org.osmdroid.tileprovider.MapTileProviderBasic;
+import org.osmdroid.tileprovider.modules.ArchiveFileFactory;
 import org.osmdroid.tileprovider.tilesource.ITileSource;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.tileprovider.util.SimpleRegisterReceiver;
 import org.osmdroid.util.BoundingBox;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.FolderOverlay;
 import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Overlay;
+import org.osmdroid.views.overlay.OverlayWithIW;
 import org.osmdroid.views.overlay.Polygon;
 import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.ScaleBarOverlay;
@@ -75,6 +97,7 @@ import org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider;
 import org.osmdroid.views.overlay.infowindow.BasicInfoWindow;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -84,61 +107,126 @@ import static com.bigemap.osmdroiddemo.constants.Constant.POST_URL;
 import static com.bigemap.osmdroiddemo.constants.Constant.PREFS_LATITUDE_STRING;
 import static com.bigemap.osmdroiddemo.constants.Constant.PREFS_LONGITUDE_STRING;
 import static com.bigemap.osmdroiddemo.constants.Constant.PREFS_ORIENTATION;
-import static com.bigemap.osmdroiddemo.constants.Constant.PREFS_SHOW_LOCATION;
 import static com.bigemap.osmdroiddemo.constants.Constant.PREFS_TILE_SOURCE;
 import static com.bigemap.osmdroiddemo.constants.Constant.PREFS_ZOOM_LEVEL;
 import static com.bigemap.osmdroiddemo.constants.Constant.PREFS_ZOOM_LEVEL_DOUBLE;
 
 public class MainActivity extends BaseActivity implements View.OnClickListener,
-        Inputtips.InputtipsListener, TextWatcher, AdapterView.OnItemClickListener {
+        TextWatcher, AdapterView.OnItemClickListener {
 
     private static final String TAG = "MainActivity";
     public static final String GOOGLE_MAP = "Google Map";
     public static final String GOOGLE_SATELLITE = "Google卫星图";
-    private MapView mapView;
-    //比例尺
-    private ScaleBarOverlay mScaleBarOverlay;
-    //设置导航图标的位置
-    private MyLocationOverlay myLocationOverlay;
-    //设置自定义定位，缩小，放大
-    private ImageView mapModeBtn;
-    private IconView locationBtn, emptyBtn;
-    private LinearLayout tabMap, tabEdit, tabTrack, tabMine;//底部导航栏子控件
+    private ScaleBarOverlay mScaleBarOverlay;//比例尺
+    private MyLocationOverlay myLocationOverlay; //定位显示
+
+    @Bind(R.id.drawer_layout)
+    private DrawerLayout mDrawerLayout;//侧边栏
+    @Bind(R.id.mapView)
+    private MapView mapView;//地图
+    @Bind(R.id.btn_location)
+    private IconView locationBtn;//定位
+    @Bind(R.id.view_main_bottom)
     private LinearLayout navMainBottom;//底部导航栏父控件
-    private ImageView zoomInBtn, zoomOutBtn;
-    private ImageView undoBtn, prickBtn, saveBtn;//轨迹绘制操作按钮
-    private RelativeLayout prickLayout;
+    //底部导航栏子控件
+    @Bind(R.id.main_tab_map)
+    private LinearLayout tabMap;//地图
+    @Bind(R.id.main_tab_edit)
+    private LinearLayout tabEdit;//编辑
+    @Bind(R.id.main_tab_track)
+    private LinearLayout tabTrack;//轨迹
+    @Bind(R.id.main_tab_offline)
+    private LinearLayout tabOffline;//离线
+    //    @Bind(R.id.main_tab_mine)
+//    private LinearLayout tabMine;//我
+    //轨迹绘制操作
+    @Bind(R.id.edit_bottom_tool_ly)
+    private LinearLayout editBottomTool;//底部编辑父控件
+    @Bind(R.id.btn_edit_undo)
+    private TextView undoBtn;//撤销，上一步
+    @Bind(R.id.btn_edit_empty)
+    private TextView emptyBtn;//清空，删除界面上所有轨迹
+    @Bind(R.id.btn_edit_rename)
+    private TextView editBtn;//编辑
+    @Bind(R.id.btn_edit_finish)
+    private TextView endBtn;//结束
+    @Bind(R.id.btn_edit_delete)
+    private TextView deleteBtn;//删除
+    @Bind(R.id.btn_edit_save)
+    private TextView saveBtn;//保存
+
+    @Bind(R.id.rl_center_prick)
+    private RelativeLayout prickLayout;//十字编辑区域
+    @Bind(R.id.edit_top_tool_ly)
+    private LinearLayout editTopTool;//顶部编辑区域
+    @Bind(R.id.btn_track_record)
     private IconView trackRecord;//轨迹记录
-    private TextView polygonMode, lineMode, areaMode, closeBtn;
-    private LinearLayout editBottomTool, editTopTool;
+    @Bind(R.id.btn_edit_shape)
+    private TextView polygonMode;//图形
+    @Bind(R.id.btn_edit_line)
+    private TextView lineMode;//路线
+    @Bind(R.id.btn_edit_poi)
+    private TextView poiMode;//点
+    @Bind(R.id.btn_edit_close)
+    private TextView closeBtn;//关闭
 
     //搜索框
+    @Bind(R.id.search_box)
     private CardView searchCardView;
+    @Bind(R.id.search_editText)
     private AutoCompleteTextView searchText;
+    @Bind(R.id.edit_text_clear)
     private ImageButton editTextClearBtn;
-    private List<Tip> tips;
+
+    //侧边栏
+    @Bind(R.id.list_layers_content)
+    private RecyclerView myLayersList;
+    @Bind(R.id.iv_layers_import)
+    private ImageView importLayers;
+
+    private String drawType = "";//0:画线，1:图形，2:周长和面积，3:导入
+    private List<GeoPoint> points;//编辑模式描点记录
+
+    private List<GeoPoint> locationList;//轨迹记录定位
+    private MyReceiver myReceiver;
+    private boolean isRecording = true;//是否正在记录轨迹
+    private boolean isMapChanged = true;//地图源状态
+    private boolean isFullScreen = true;//是否全屏显示
+    private boolean isEditMode = false;//是否处于编辑模式
+    private boolean isMyTrack = false;//是否处于轨迹界面
+    private boolean isOffline = false;//是否处于离线模式
+    private boolean isOnline = true;//是否处于在线模式
+    private boolean isFinished = false;//是否结束绘制
 
     //地图选择
-    private TextView normalMap, satelliteMap;
-    private RecyclerView mapSourceList;//地图源列表
-    private boolean isMapChanged = true;
+    @Bind(R.id.btn_map_mode)
+    private ImageView mapModeBtn;
+    @Bind(R.id.divider_map_mode)
+    private View dividerView;
+    @Bind(R.id.tv_map_type_normal)
+    private TextView normalMap;
+    @Bind(R.id.tv_map_type_satellite)
+    private TextView satelliteMap;
+    @Bind(R.id.list_map_source)
+    private RecyclerView mapSourceList;//在线地图源列表
+    @Bind(R.id.btn_add_offline)
+    private Button offlineBtn;
 
-//    private ScrollView contentScroll;
-//    private ImageView importLayers;
-//    private boolean isExpanded=true;
-
-    private boolean isRecord = true;//用于轨迹记录按钮切换
-    private int drawType = 0;//0:画线，1:图形，2:周长和面积，3:导入
-    private GeoPoint convertedPoint;
-    private List<GeoPoint> points;
-    private List<GeoPoint> locationList;
-    private MyReceiver myReceiver;
-    private int zoomLevel;
-    private Polyline polyline;
-    private Polygon polygon;
-    private boolean isFullScreen = true;//是否全屏显示
-
-    public static boolean isBackground = false;
+    private List<Tip> tips;
+    public static boolean isBackground = true;
+    private List<Node> mData;
+    private List<BaseGraph> baseGraphs;
+    private FolderOverlay poiMarkers;
+    private Polyline gpsLine = null;//记录的轨迹
+    private Polyline editLine = null;
+    private Polygon editPolygon = null;
+    private List<Marker> markers;
+    private FolderOverlay polylines;
+    private FolderOverlay polygons;
+    private SimpleTreeRecyclerAdapter treeRecyclerAdapter;
+    private Node root;
+    private int selectedPosition = -1;
+    private int saveType;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -146,14 +234,18 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         if (Build.VERSION.SDK_INT >= 23) {
             checkPermissions();
         }
+        if (isFirstStart()) {
+//            Configuration.getInstance().setOsmdroidBasePath(new File(Constant.APP_BASE_PATH));
+//            Configuration.getInstance().setOsmdroidTileCache(new File(Constant.TILE_CACHE));
+            Configuration.getInstance().setTileDownloadThreads((short) 4);//设置瓦片下载线程数
+        }
         setContentView(R.layout.activity_main);
         init();
     }
 
     private void init() {
-        mapView = $(R.id.mapView);
-        initData();
         initView();
+        initData();
         initTileSource();
 
         mapView.setDrawingCacheEnabled(true);
@@ -167,11 +259,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         mScaleBarOverlay.setAlignBottom(true);
         mScaleBarOverlay.setEnableAdjustLength(true);
         mapView.getOverlays().add(mScaleBarOverlay);
-
-        //显示指南针
-//        mCompassOverlay = new MyCompassOverlay(this, mapView);
-//        mCompassOverlay.enableCompass();
-//        mapView.getOverlays().add(mCompassOverlay);
 
         //显示定位
         GpsMyLocationProvider gps = new GpsMyLocationProvider(this);
@@ -188,68 +275,52 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
             dataKeeper.putInt(Constant.PREFS_MAP_SOURCE, Constant.OSM);
         }
 
+        root = new Node(1, 0, "我的图层");
+        root.setChecked(true);
+        mData.add(root);
+
+        treeRecyclerAdapter = new SimpleTreeRecyclerAdapter(
+                myLayersList, this, mData, 1, R.drawable.tree_ex, R.drawable.tree_ec);
+        myLayersList.setLayoutManager(new LinearLayoutManager(this));
+        myLayersList.setHasFixedSize(true);
+        myLayersList.setAdapter(treeRecyclerAdapter);
+
+        treeRecyclerAdapter.setOnTreeNodeClickListener(treeNodeListener);
     }
 
     private void initData() {
         points = new ArrayList<>();
         locationList = new ArrayList<>();
+        mData = new ArrayList<>();
+        baseGraphs = new ArrayList<>();
+
     }
 
     private void initView() {
-//        zoomInBtn = $(R.id.btn_zoom_in);
-//        zoomOutBtn = $(R.id.btn_zoom_out);
-        emptyBtn = $(R.id.btn_empty);
-        locationBtn = $(R.id.btn_location);
-        prickLayout = $(R.id.rl_center_prick);
-        tabMap = $(R.id.main_tab_map);
+        mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+        mDrawerLayout.setScrimColor(Color.TRANSPARENT);
+        mDrawerLayout.addDrawerListener(drawerListener);
         tabMap.setSelected(true);
-        tabEdit = $(R.id.main_tab_edit);
-        tabTrack = $(R.id.main_tab_track);
-        tabMine = $(R.id.main_tab_mine);
-        trackRecord = $(R.id.btn_track_record);
-        searchText = $(R.id.search_editText);
-        searchText.setCursorVisible(false);
-        editTextClearBtn = $(R.id.edit_text_clear);
-
-        mapModeBtn = $(R.id.btn_map_mode);
-        mapModeBtn.setImageResource(R.drawable.ic_map_google);
-        normalMap = $(R.id.tv_map_type_normal);
-        satelliteMap = $(R.id.tv_map_type_satellite);
-        searchCardView = $(R.id.search_box);
-        searchCardView.setCardBackgroundColor(ContextCompat.getColor(this, R.color.translucent_white_65));
-        mapSourceList = $(R.id.list_map_source);
-
-        editTopTool = $(R.id.edit_top_tool_ly);
-        polygonMode = $(R.id.btn_edit_shape);
-        lineMode = $(R.id.btn_edit_track);
-        lineMode.setSelected(true);
-        areaMode = $(R.id.btn_edit_measure);
-        closeBtn = $(R.id.btn_edit_close);
-        editBottomTool = $(R.id.edit_bottom_tool_ly);
-        undoBtn = $(R.id.btn_edit_undo);
-        prickBtn = $(R.id.btn_edit_prick);
-        saveBtn = $(R.id.btn_edit_save);
-        navMainBottom = $(R.id.view_main_bottom);
-//        contentScroll = $(R.id.scroll_layers_content);
-//        importLayers = $(R.id.iv_layers_import);
+        searchCardView.setCardBackgroundColor(ContextCompat.getColor(this, R.color.translucent_white_55));
 
         locationBtn.setOnClickListener(this);
-//        zoomInBtn.setOnClickListener(this);
-//        zoomOutBtn.setOnClickListener(this);
-        emptyBtn.setOnClickListener(this);
         mapModeBtn.setOnClickListener(this);
         tabMap.setOnClickListener(this);
         tabEdit.setOnClickListener(this);
         tabTrack.setOnClickListener(this);
-        tabMine.setOnClickListener(this);
+        tabOffline.setOnClickListener(this);
+//        tabMine.setOnClickListener(this);
         trackRecord.setOnClickListener(this);
         undoBtn.setOnClickListener(this);
-        prickBtn.setOnClickListener(this);
+        emptyBtn.setOnClickListener(this);
+        endBtn.setOnClickListener(this);
+        closeBtn.setOnClickListener(this);
+        deleteBtn.setOnClickListener(this);
+        editBtn.setOnClickListener(this);
         saveBtn.setOnClickListener(this);
         polygonMode.setOnClickListener(this);
         lineMode.setOnClickListener(this);
-        areaMode.setOnClickListener(this);
-        closeBtn.setOnClickListener(this);
+        poiMode.setOnClickListener(this);
         prickLayout.setOnClickListener(this);
         searchText.setOnClickListener(this);
         searchText.addTextChangedListener(this);
@@ -257,7 +328,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         editTextClearBtn.setOnClickListener(this);
         normalMap.setOnClickListener(this);
         satelliteMap.setOnClickListener(this);
-//        importLayers.setOnClickListener(this);
+        importLayers.setOnClickListener(this);
+        offlineBtn.setOnClickListener(this);
     }
 
     private void initTileSource() {
@@ -275,12 +347,49 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
             mapView.setTileSource(tileSource);
         } catch (final IllegalArgumentException e) {
             mapView.setTileSource(TileSourceFactory.DEFAULT_TILE_SOURCE);
-            myLocationOverlay.setTileSource(Constant.OSM);
+//            myLocationOverlay.setTileSource(Constant.OSM);
         }
     }
 
+    /**
+     * 监听侧边栏
+     */
+    private DrawerLayout.SimpleDrawerListener drawerListener = new DrawerLayout.SimpleDrawerListener() {
+        @Override
+        public void onDrawerOpened(View drawerView) {
+            mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+            super.onDrawerOpened(drawerView);
+        }
+
+        @Override
+        public void onDrawerClosed(View drawerView) {
+            mDrawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+            super.onDrawerClosed(drawerView);
+        }
+    };
+
+    private OnTreeNodeClickListener treeNodeListener=new OnTreeNodeClickListener() {
+        @Override
+        public void onClick(Node node, int position) {
+            treeRecyclerAdapter.setItemSelected(position);
+            BaseGraph baseGraph = (BaseGraph) node.bean;
+            selectedPosition = position;
+            if (baseGraph != null) {
+                Log.d(TAG, "onClick: id=" + baseGraph.getId());
+            }
+            Log.d(TAG, "onClick: position=" + position);
+        }
+
+        @Override
+        public void onCheckChange(Node node, int position, List<Node> checkedNodes) {
+            Log.d(TAG, "onCheckChange: nodeId="+node.getId());
+        }
+    };
+    /**
+     * 点击地图操作
+     */
     private void mapClickEvent() {
-        Overlay mapEventOverlay=new Overlay() {
+        Overlay mapEventOverlay = new Overlay() {
             @Override
             public void draw(Canvas c, MapView osmv, boolean shadow) {
 
@@ -288,24 +397,26 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
 
             @Override
             public boolean onSingleTapConfirmed(MotionEvent e, MapView mapView) {
+                if (isOffline || isEditMode) {
+                    return super.onSingleTapConfirmed(e, mapView);
+                }
                 if (isFullScreen) {
                     isFullScreen = false;
-                    searchCardView.setVisibility(View.GONE);
+                    isMapChanged = true;
                     navMainBottom.setVisibility(View.GONE);
-                    mapModeBtn.setVisibility(View.GONE);
-                    emptyBtn.setVisibility(View.GONE);
+                    importLayers.setVisibility(View.GONE);
                 } else {
-                    isFullScreen=true;
-                    searchCardView.setVisibility(View.VISIBLE);
+                    isFullScreen = true;
+                    isMapChanged = true;
                     navMainBottom.setVisibility(View.VISIBLE);
-                    mapModeBtn.setVisibility(View.VISIBLE);
-                    emptyBtn.setVisibility(View.VISIBLE);
+                    importLayers.setVisibility(View.VISIBLE);
                 }
                 return super.onSingleTapConfirmed(e, mapView);
             }
         };
         mapView.getOverlays().add(mapEventOverlay);
     }
+
     /**
      * 判断程序是否第一次启动
      *
@@ -324,7 +435,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     @Override
     protected void onStart() {
         super.onStart();
-        isBackground = false;
 //        postUrl("login");
     }
 
@@ -351,7 +461,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         }
     }
 
-
     @Override
     protected void onRestart() {
         super.onRestart();
@@ -361,46 +470,82 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     protected void onResume() {
         super.onResume();
 
-        zoomLevel = dataKeeper.getInt(PREFS_ZOOM_LEVEL_DOUBLE, dataKeeper.getInt(PREFS_ZOOM_LEVEL, 10));
-        mapView.getController().setZoom(zoomLevel);
+        isBackground = false;
+        if (isOnline) {
+            int zoomLevel = dataKeeper.getInt(PREFS_ZOOM_LEVEL_DOUBLE, dataKeeper.getInt(PREFS_ZOOM_LEVEL, 10));
+            mapView.getController().setZoom(zoomLevel);
+        }
         myLocationOverlay.enableMyLocation();
         myLocationOverlay.setOrientationProvider(new InternalCompassOrientationProvider(this));
-        myLocationOverlay.enableCompass();
+        if (!isEditMode) {
+            myLocationOverlay.enableCompass();
+        }
         mScaleBarOverlay.enableScaleBar();
+        Log.d(TAG, "onResume: " + mapView.getTileProvider());
         //判断程序是否第一次启动
         if (isFirstStart()) {
             mapView.getController().setCenter(new GeoPoint(30.5702183724, 104.0647735044));
         } else {
+            if (isMyTrack) {
+                return;
+            }
             final String latitudeString = dataKeeper.get(PREFS_LATITUDE_STRING, "30.5702183724");
             final String longitudeString = dataKeeper.get(PREFS_LONGITUDE_STRING, "104.0647735044");
             final double latitude = Double.valueOf(latitudeString);
             final double longitude = Double.valueOf(longitudeString);
             mapView.getController().animateTo(new GeoPoint(latitude, longitude));
         }
-
+        if (!isRecording) {
+            myLocationOverlay.enableFollowLocation();
+        }
     }
 
     @Override
     protected void onPause() {
         isBackground = true;
         dataKeeper.put("first_start", false);
-        dataKeeper.put(PREFS_TILE_SOURCE, mapView.getTileProvider().getTileSource().name());
-        dataKeeper.put(PREFS_ORIENTATION, mapView.getMapOrientation());
-        dataKeeper.put(PREFS_LATITUDE_STRING, String.valueOf(mapView.getMapCenter().getLatitude()));
-        dataKeeper.put(PREFS_LONGITUDE_STRING, String.valueOf(mapView.getMapCenter().getLongitude()));
-        dataKeeper.putInt(PREFS_ZOOM_LEVEL_DOUBLE, mapView.getZoomLevel());
-        dataKeeper.put(PREFS_SHOW_LOCATION, myLocationOverlay.isMyLocationEnabled());
-        super.onPause();
+        if (isOnline) {
+            saveMapInfo();
+        }
+        if (!isMapChanged) {
+            isMapChanged = true;
+            hideMapSource();
+        }
         myLocationOverlay.disableMyLocation();
         myLocationOverlay.disableCompass();
         mScaleBarOverlay.disableScaleBar();
+        if (isRecording) {
+            myLocationOverlay.disableFollowLocation();
+        }
+        super.onPause();
+        if (poiMarkers != null) {
+            poiMarkers.closeAllInfoWindows();
+        }
     }
+
 
     @Override
     protected void onDestroy() {
 //        postUrl("logout");
-        if (myReceiver != null) {
+        if (!isRecording) {
             unregisterReceiver(myReceiver);
+            myReceiver = null;
+        }
+        baseGraphs.clear();
+        baseGraphs = null;
+        if (polylines != null) {
+            polylines.closeAllInfoWindows();
+            mapView.getOverlays().remove(polylines);
+        }
+        if (polygons != null) {
+            polygons.closeAllInfoWindows();
+            mapView.getOverlays().remove(polygons);
+        }
+        for (Overlay overlay : mapView.getOverlays()) {
+            if (overlay instanceof OverlayWithIW) {
+                ((OverlayWithIW) overlay).onDestroy();
+                mapView.getOverlays().remove(overlay);
+            }
         }
         super.onDestroy();
     }
@@ -431,8 +576,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                         @Override
                         public void run() {
                             Log.d(TAG, "run: first location=" + myLocationOverlay.getLastFix());
-                            convertedPoint = myLocationOverlay.getMyLocation();
-                            mapView.getController().animateTo(convertedPoint);
+                            mapView.getController().animateTo(myLocationOverlay.getMyLocation());
                         }
                     });
                 } else {
@@ -456,9 +600,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         Marker marker = new Marker(mapView);
         marker.setPosition(point);
         marker.setIcon(icon);
-        marker.setTitle("坐标：lat=" + point.getLatitude() + ",lng=" + point.getLongitude());
+        marker.setTitle("坐标：纬度=" + point.getLatitude() + ",\n\n经度=" + point.getLongitude());
         marker.setFlat(true);//设置marker平贴地图效果
-        mapView.getOverlays().add(marker);
+        mapView.getOverlays().removeAll(markers);
+        markers.add(marker);
+        mapView.getOverlays().addAll(markers);
         mapView.invalidate();
     }
 
@@ -472,35 +618,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         mapView.getOverlays().add(marker);
     }
 
-    /**
-     * 线
-     *
-     * @param points
-     */
-    private void setPolyline(List<GeoPoint> points) {
-        polyline = new Polyline();
-        polyline.setWidth(8);
-        polyline.setColor(R.color.colorAccent);
-        polyline.setPoints(points);
-        mapView.getOverlays().add(polyline);
-        mapView.invalidate();
-    }
-
-    /**
-     * 面
-     *
-     * @param points
-     */
-    private void setPolygon(List<GeoPoint> points) {
-        polygon = new Polygon();
-        polygon.setStrokeWidth(5);
-        polygon.setStrokeColor(R.color.colorAccent);
-        polygon.setFillColor(R.color.blue);
-        polygon.setPoints(points);
-        mapView.getOverlays().add(polygon);
-        mapView.invalidate();
-    }
-
     @Override
     public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
@@ -508,13 +625,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
 
     @Override
     public void onTextChanged(CharSequence s, int start, int before, int count) {
-        String newText = s.toString().trim();
-        if (!AMapUtils.IsEmptyOrNullString(newText)) {
-            InputtipsQuery inputQuery = new InputtipsQuery(newText, null);
-            Inputtips inputTips = new Inputtips(this, inputQuery);
-            inputTips.setInputtipsListener(this);
-            inputTips.requestInputtipsAsyn();
-        }
+
     }
 
     @Override
@@ -524,35 +635,55 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         } else {
             editTextClearBtn.setVisibility(View.INVISIBLE);
         }
-    }
+        String newText = s.toString().trim();
+        if (!TextUtils.isEmpty(newText)) {
+            BoundingBox box = mapView.getBoundingBox();
+            HttpClient.getTip(box, newText, new HttpCallback<Result>() {
+                @Override
+                public void onSuccess(Result result) {
+                    tips = getLocationTitle(result.getData().getTitles());
+                    List<String> listString = new ArrayList<>();
+                    for (int i = 0; i < tips.size(); i++) {
+                        listString.add(tips.get(i).getName());
+                    }
+                    ArrayAdapter<String> aAdapter = new ArrayAdapter<>(
+                            MainActivity.this,
+                            android.R.layout.simple_list_item_1, listString);
+                    searchText.setAdapter(aAdapter);
+                    aAdapter.notifyDataSetChanged();
+                }
 
-    @Override
-    public void onGetInputtips(List<Tip> tipList, int rCode) {
-        if (rCode == AMapException.CODE_AMAP_SUCCESS) {// 正确返回
-            tips = tipList;
-            List<String> listString = new ArrayList<>();
-            for (int i = 0; i < tipList.size(); i++) {
-                listString.add(tipList.get(i).getName());
-            }
-            ArrayAdapter<String> aAdapter = new ArrayAdapter<>(
-                    this,
-                    android.R.layout.simple_list_item_1, listString);
-            searchText.setAdapter(aAdapter);
-            aAdapter.notifyDataSetChanged();
-        } else {
-            toastUtils.showToast(rCode);
+                @Override
+                public void onFail(Exception e) {
+                    Log.d(TAG, "onFail: ");
+                }
+            });
         }
     }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        searchText.setText("");
         Tip tip = tips.get(position);
-        if (tip.getPoint() != null) {
-            LatLonPoint sharePoint = tip.getPoint();//gps坐标
-            GeoPoint searchPoint = PositionUtils.gps84_To_Gcj02(new GeoPoint(sharePoint.getLatitude(), sharePoint.getLongitude()));
-            mapView.getController().animateTo(searchPoint);
-            setPoint(searchPoint, tip.getName());
+        GeoPoint searchPoint = tip.getPoint();
+        mapView.getController().animateTo(searchPoint);
+        setPoint(searchPoint, tip.getName());
+    }
+
+    /**
+     * 排除空坐标地址
+     *
+     * @param titles
+     * @return
+     */
+    private List<Tip> getLocationTitle(List<Title> titles) {
+        List<Tip> tips = new ArrayList<>();
+        for (Title title : titles) {
+            if (title.getTip().getPoint() != null) {
+                tips.add(title.getTip());
+            }
         }
+        return tips;
     }
 
     //隐藏软键盘和编辑框光标
@@ -561,7 +692,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         if (this.getCurrentFocus() != null) {
             hideKeyboard();
             hideMapSource();
-            hideMapType();
         }
         return super.onTouchEvent(event);
     }
@@ -569,18 +699,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     @Override
     public void onClick(View v) {
         String time = DateUtils.formatUTC(System.currentTimeMillis(), "yyyy-MM-dd");
-        String startTime;
-        String name = "";
-        switch (drawType) {
-            case 0:
-                name = lineMode.getText() + "&" + time;
-                break;
-            case 1:
-                name = polygonMode.getText() + "&" + time;
-                break;
-            case 2:
-                name = areaMode.getText() + "&" + time;
-                break;
+        String name;
+        if (drawType.equals(Constant.POLYLINE)) {
+            name = lineMode.getText() + "&" + time;
+        } else if (drawType.equals(Constant.POLYGON)) {
+            name = polygonMode.getText() + "&" + time;
+        } else {
+            name = poiMode.getText() + "&" + time;
         }
         switch (v.getId()) {
             case R.id.btn_location://定位
@@ -594,199 +719,563 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                     checkPermissions();
                 }
                 break;
-//            case R.id.btn_zoom_in://放大
-//                mapView.getController().zoomIn();//默认按级缩放
-//                break;
-//            case R.id.btn_zoom_out://缩小
-//                mapView.getController().zoomOut();
-//                break;
-            case R.id.btn_empty:
-                points.clear();
-                mapView.getOverlays().clear();
-                mapView.getOverlays().add(mScaleBarOverlay);
-//                mapView.getOverlays().add(mCompassOverlay);
-                mapView.getOverlays().add(myLocationOverlay);
-                mapClickEvent();
-                mapView.invalidate();
-                break;
             case R.id.btn_map_mode://地图切换
                 if (isMapChanged) {
                     isMapChanged = false;
                     showMapSource();
-                    showMapType();
                 } else {
                     isMapChanged = true;
                     hideMapSource();
-                    hideMapType();
                 }
                 break;
             case R.id.main_tab_edit://绘制轨迹
+                isEditMode = true;
+//                if (!isRecording) {
+//
+//                }
                 editTopTool.setVisibility(View.VISIBLE);
                 prickLayout.setVisibility(View.VISIBLE);
-                trackRecord.setVisibility(View.GONE);
                 editBottomTool.setVisibility(View.VISIBLE);
+                trackRecord.setVisibility(View.GONE);
                 searchCardView.setVisibility(View.GONE);
                 navMainBottom.setVisibility(View.GONE);
                 myLocationOverlay.disableCompass();
+
+                markers = new ArrayList<>();
+                polygons = new FolderOverlay();
+//        polygons = new ArrayList<>();
+                mapView.getOverlays().add(polygons);
+                polylines = new FolderOverlay();
+//        polylines = new ArrayList<>();
+                mapView.getOverlays().add(polylines);
+
+                Polyline startLine = new Polyline();
+                startLine.setWidth(5);
+                editLine = startLine;
                 break;
-            case R.id.main_tab_map:
+            case R.id.main_tab_map://在线地图
+                isOnline = true;
+                isOffline = false;
                 tabMap.setSelected(true);
-                tabMine.setSelected(false);
+//                tabMine.setSelected(false);
+                tabOffline.setSelected(false);
+                if (!isMapChanged) {
+                    isMapChanged = true;
+                    hideMapSource();
+                }
+                loadOnline();
+                showAll();
                 break;
-            case R.id.main_tab_track://查看轨迹记录
-                Intent i = new Intent(MainActivity.this, TrackRecordActivity.class);
-                startActivityForResult(i, 33);
-//                UIUtils.showTrackRecordActivity(MainActivity.this);
+            case R.id.main_tab_track://轨迹记录
+                Intent intent = new Intent(MainActivity.this, MyTrackActivity.class);
+                startActivityForResult(intent, 33);
                 break;
-            case R.id.main_tab_mine:
-                tabMine.setSelected(true);
+            case R.id.main_tab_offline://离线地图
+                isOffline = true;
+                isOnline = false;
+                tabOffline.setSelected(true);
                 tabMap.setSelected(false);
+//                tabMine.setSelected(false);
+                saveMapInfo();
+                hideAll();
+                showOfflineMap();
+//                loadOffline(Constant.APP_BASE_PATH);
+                Log.d(TAG, "onClick: " + mapView.getTileProvider().toString());
                 break;
-            case R.id.btn_track_record://轨迹记录
-                startTime = DateUtils.formatUTC(System.currentTimeMillis(), null);
-                if (isRecord) {
-                    isRecord = false;
+//            case R.id.main_tab_mine://我
+//                tabOffline.setSelected(false);
+//                tabMine.setSelected(true);
+//                tabMap.setSelected(false);
+//                break;
+            case R.id.btn_track_record://记录轨迹
+                if (isRecording) {
+                    isRecording = false;
                     locationList.clear();
                     trackRecord.setText(R.string.track_stop);
+                    trackRecord.setTextColor(Color.RED);
                     toastUtils.showToast("开始记录轨迹");
-                    startService(new Intent(this, MyLocationService.class));
-                    // 注册广播
-                    myReceiver = new MyReceiver();
-                    IntentFilter filter = new IntentFilter();
-                    filter.addAction("com.bigemap.osmdroiddemo.service.intent.locationList");
-                    registerReceiver(myReceiver, filter);
+                    startBackground();
+                    if (gpsLine == null) {
+                        gpsLine = new Polyline();
+                        gpsLine.setWidth(5);
+                        gpsLine.setColor(Color.RED);
+                        mapView.getOverlays().add(gpsLine);
+                    }
                     myLocationOverlay.enableFollowLocation();
                 } else {
-                    isRecord = true;
+                    isRecording = true;
                     trackRecord.setText(R.string.track_start);
-                    stopService(new Intent(this, MyLocationService.class));
-                    if (locationList.size() > 1) {
+                    trackRecord.setTextColor(Color.WHITE);
+                    stopBackground();
+                    if (locationList.size() > 2) {
                         toastUtils.showToast("停止记录轨迹");
+                        saveType = 11;
+                        askSaveDialog(name, 0);
+                        BaseGraph baseGraph = new BaseGraph();
+                        baseGraph.setId(baseGraphs.size());
+                        baseGraph.setType(drawType);
+                        baseGraph.setName("轨迹#" + baseGraphs.size());
+                        baseGraph.getGeoPoints().addAll(locationList);
+                        baseGraphs.add(baseGraph);
+
+                        Node node = new Node<>(baseGraphs.size() + 1, root.getId(), baseGraph.getName(), baseGraph);
+                        node.setChecked(true);
+                        mData.add(node);
+                        treeRecyclerAdapter.addDataAll(mData, 1);
                     } else {
                         toastUtils.showToast("此次轨迹路线太短，不作记录");
                     }
-                    unregisterReceiver(myReceiver);
                     myLocationOverlay.disableFollowLocation();
-                    saveTrack(startTime, name, locationList);
                 }
                 break;
-
+            case R.id.rl_center_prick:
+                if (TextUtils.isEmpty(drawType)) {
+                    toastUtils.showSingletonToast("请先选择上方绘制类型");
+                } else {
+                    GeoPoint centerPoint = (GeoPoint) mapView.getMapCenter();
+                    setRoundPoint(centerPoint);
+                    points.add(centerPoint);
+                    drawTrack(points);
+                }
+                break;
             case R.id.btn_edit_undo://撤销上一步
                 if (points.size() > 0) {
                     points.remove(points.size() - 1);
                     drawTrack(points);
+                    mapView.getOverlays().removeAll(markers);
+                    markers.remove(markers.size() - 1);
+                    mapView.getOverlays().addAll(markers);
+                    mapView.invalidate();
                 }
                 break;
-            case R.id.rl_center_prick:
-            case R.id.btn_edit_prick://轨迹描点
-                GeoPoint centerPoint = (GeoPoint) mapView.getMapCenter();
-                setRoundPoint(centerPoint);
-                points.add(centerPoint);
-                drawTrack(points);
-                break;
-            case R.id.btn_edit_save://保存轨迹并跳转编辑
-                startTime = DateUtils.formatUTC(System.currentTimeMillis(), null);
-                if (points.size() > 1) {
-                    Track track = saveTrack(startTime, name, points);
-                    int trackId = track.getId();
-                    UIUtils.showTrackEditActivity(MainActivity.this, trackId);
-                    Log.d(TAG, "trackId=" + trackId);
-                } else {
-                    toastUtils.showToast("轨迹点数不足，请绘制两点以上");
+            case R.id.btn_edit_empty://清空界面
+                points.clear();
+                markers.clear();
+                for (Overlay overlay : mapView.getOverlays()) {
+                    if (overlay instanceof OverlayWithIW) {
+                        mapView.getOverlays().remove(overlay);
+                    }
+                    if (overlay instanceof FolderOverlay) {
+                        mapView.getOverlays().remove(overlay);
+                    }
                 }
-                points.clear();
+                polygons = new FolderOverlay();
+                mapView.getOverlays().add(polygons);
+                polylines = new FolderOverlay();
+                mapView.getOverlays().add(polylines);
+                mapView.invalidate();
+                mData.clear();
+                mData.add(root);
+                treeRecyclerAdapter.addDataAll(mData, 0);
                 break;
-            case R.id.btn_edit_shape://图形
-                polygonMode.setSelected(true);
-                lineMode.setSelected(false);
-                areaMode.setSelected(false);
-                saveBtn.setVisibility(View.VISIBLE);
+            case R.id.btn_edit_finish://完成本次绘制
+                saveLine(points);
                 points.clear();
-                drawType = 1;
-                break;
-            case R.id.btn_edit_track://轨迹
-                polygonMode.setSelected(false);
-                lineMode.setSelected(true);
-                areaMode.setSelected(false);
-                saveBtn.setVisibility(View.VISIBLE);
-                points.clear();
-                drawType = 0;
-                break;
-            case R.id.btn_edit_measure://周长和面积
-                polygonMode.setSelected(false);
-                lineMode.setSelected(false);
-                areaMode.setSelected(true);
-                saveBtn.setVisibility(View.GONE);
-                points.clear();
-                drawType = 2;
                 break;
             case R.id.btn_edit_close://关闭轨迹绘制
-                myLocationOverlay.setOrientationProvider(new InternalCompassOrientationProvider(this));
-                myLocationOverlay.enableCompass();
-                points.clear();
-                editTopTool.setVisibility(View.GONE);
-                prickLayout.setVisibility(View.GONE);
-                trackRecord.setVisibility(View.VISIBLE);
-                editBottomTool.setVisibility(View.GONE);
-                searchCardView.setVisibility(View.VISIBLE);
-                navMainBottom.setVisibility(View.VISIBLE);
+                if (points.size() > 0) {
+                    toastUtils.showSingletonToast("请先结束本次操作");
+                } else {
+                    isEditMode = false;
+                    editLine = null;
+                    editPolygon = null;
+                    drawType = "";
+                    polygonMode.setSelected(false);
+                    lineMode.setSelected(false);
+                    poiMode.setSelected(false);
+                    if (isOffline) {
+                        editTopTool.setVisibility(View.GONE);
+                        prickLayout.setVisibility(View.GONE);
+                        editBottomTool.setVisibility(View.GONE);
+                        navMainBottom.setVisibility(View.VISIBLE);
+                        return;
+                    }
+                    myLocationOverlay.setOrientationProvider(new InternalCompassOrientationProvider(this));
+                    myLocationOverlay.enableCompass();
+
+                    editTopTool.setVisibility(View.GONE);
+                    prickLayout.setVisibility(View.GONE);
+                    editBottomTool.setVisibility(View.GONE);
+                    trackRecord.setVisibility(View.VISIBLE);
+                    searchCardView.setVisibility(View.VISIBLE);
+                    navMainBottom.setVisibility(View.VISIBLE);
+                }
+                break;
+            case R.id.iv_layers_import://侧边栏
+                mDrawerLayout.openDrawer(Gravity.LEFT);
+                break;
+            case R.id.btn_edit_delete://删除
+                if (selectedPosition > 0) {
+                    AlertDialog.Builder builder = DialogUtils.dialogBuilder(this, "请确认需要删除该条数据？", null);
+                    builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            mData.remove(selectedPosition);
+                            treeRecyclerAdapter.setItemSelected(-1);
+                            treeRecyclerAdapter.addDataAll(mData, 1);
+                            dialog.dismiss();
+                        }
+                    });
+                    builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    });
+                    builder.create().show();
+                } else {
+                    toastUtils.showSingletonToast("请先选中需要编辑的选项");
+                }
+                break;
+            case R.id.btn_edit_rename://编辑
+//                mDrawerLayout.closeDrawers();
+                if (selectedPosition != -1) {
+                    askSaveDialog(mData.get(selectedPosition).getName(), 1);
+                } else {
+                    toastUtils.showSingletonToast("请先选中需要编辑的选项");
+                }
+                break;
+            case R.id.btn_edit_save://保存轨迹kml
+                if (isFinished && baseGraphs.size() > 0) {
+                    saveType = 12;
+                    askSaveDialog(name, 0);
+                } else {
+                    toastUtils.showSingletonToast("没有绘制数据或结束绘制，无法保存");
+                }
+                break;
+            case R.id.btn_edit_shape://图形
+                if (points.size() > 0) {
+                    toastUtils.showSingletonToast("请先结束本次操作");
+                } else {
+                    polygonMode.setSelected(true);
+                    lineMode.setSelected(false);
+                    poiMode.setSelected(false);
+                    drawType = Constant.POLYGON;
+
+                    Polygon polygon = new Polygon();
+                    polygon.setStrokeWidth(5);
+                    polygon.setFillColor(Color.GRAY);
+                    editPolygon = polygon;
+                }
+                break;
+            case R.id.btn_edit_line://线
+                if (points.size() > 0) {
+                    toastUtils.showSingletonToast("请先结束本次操作");
+                } else {
+                    polygonMode.setSelected(false);
+                    lineMode.setSelected(true);
+                    poiMode.setSelected(false);
+                    drawType = Constant.POLYLINE;
+
+                    Polyline polyline = new Polyline();
+                    polyline.setWidth(5);
+                    editLine = polyline;
+                }
+                break;
+            case R.id.btn_edit_poi://点
+                if (points.size() > 0) {
+                    toastUtils.showSingletonToast("请先结束本次操作");
+                } else {
+                    polygonMode.setSelected(false);
+                    lineMode.setSelected(false);
+                    poiMode.setSelected(true);
+                    drawType = Constant.POI;
+                }
                 break;
             case R.id.edit_text_clear://清空搜索输入
                 searchText.setText("");
                 break;
             case R.id.search_editText://输入时
+                searchText.setFocusable(true);
+                searchText.setFocusableInTouchMode(true);
                 searchText.setCursorVisible(true);
-                searchCardView.setCardBackgroundColor(ContextCompat.getColor(this, android.R.color.white));
+                searchCardView.setCardBackgroundColor(Color.WHITE);
                 break;
             case R.id.tv_map_type_normal://点击地图类型
                 normalMap.setSelected(true);
                 satelliteMap.setSelected(false);
-                dataKeeper.put(Constant.PREFS_NORMAL_MAP_STATE, true);
-                dataKeeper.put(Constant.PREFS_SATELLITE_STATE, false);
-                showMapView();
+                if (isOnline) {
+                    dataKeeper.put(Constant.PREFS_NORMAL_MAP_STATE, true);
+                    dataKeeper.put(Constant.PREFS_SATELLITE_STATE, false);
+                    showMapView();
+                } else if (isOffline) {
+                    dataKeeper.put(Constant.PREFS_OFFLINE_ELECTRIC_STATE, true);
+                    dataKeeper.put(Constant.PREFS_OFFLINE_SATELLITE_STATE, false);
+                    showOfflineMap();
+                }
                 break;
             case R.id.tv_map_type_satellite://点击卫星地图
                 normalMap.setSelected(false);
                 satelliteMap.setSelected(true);
-                dataKeeper.put(Constant.PREFS_NORMAL_MAP_STATE, false);
-                dataKeeper.put(Constant.PREFS_SATELLITE_STATE, true);
-                showMapView();
+                if (isOnline) {
+                    dataKeeper.put(Constant.PREFS_NORMAL_MAP_STATE, false);
+                    dataKeeper.put(Constant.PREFS_SATELLITE_STATE, true);
+                    showMapView();
+                } else if (isOffline) {
+                    dataKeeper.put(Constant.PREFS_OFFLINE_ELECTRIC_STATE, false);
+                    dataKeeper.put(Constant.PREFS_OFFLINE_SATELLITE_STATE, true);
+                    showOfflineMap();
+                }
                 break;
-//            case R.id.iv_layers_import:
-//                if (isExpanded) {
-//                    isExpanded=false;
-//                    contentScroll.setVisibility(View.VISIBLE);
-//                } else {
-//                    isExpanded=true;
-//                    contentScroll.setVisibility(View.GONE);
-//                }
-//                break;
+            case R.id.btn_add_offline://添加离线地图源
+                startActivityForResult(new Intent(this, OfflineMapChooseActivity.class), 33);
+                break;
+        }
+    }
+
+    /*
+    停止后台
+     */
+    private void stopBackground() {
+        stopService(new Intent(this, MyLocationService.class));
+        unregisterReceiver(myReceiver);
+    }
+
+    /*
+    开启后台
+     */
+    private void startBackground() {
+        startService(new Intent(this, MyLocationService.class));
+        // 注册广播
+        myReceiver = new MyReceiver();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("com.bigemap.osmdroiddemo.service.intent.locationList");
+        registerReceiver(myReceiver, filter);
+    }
+
+    /*
+    加载在线地图
+     */
+    private void loadOnline() {
+        String tileSourceName = dataKeeper.get(PREFS_TILE_SOURCE, GOOGLE_MAP);
+        ITileSource tileSource = TileSourceFactory.getTileSource(tileSourceName);
+        mapView.setTileSource(tileSource);
+        mapView.setTileProvider(new MapTileProviderBasic(getApplicationContext(), tileSource));
+        int zoomLevel = dataKeeper.getInt(PREFS_ZOOM_LEVEL_DOUBLE, dataKeeper.getInt(PREFS_ZOOM_LEVEL, 10));
+        mapView.getController().setZoom(zoomLevel);
+        String latitudeString = dataKeeper.get(PREFS_LATITUDE_STRING, "30.5702183724");
+        String longitudeString = dataKeeper.get(PREFS_LONGITUDE_STRING, "104.0647735044");
+        double latitude = Double.valueOf(latitudeString);
+        double longitude = Double.valueOf(longitudeString);
+        mapView.getController().animateTo(new GeoPoint(latitude, longitude));
+        mapView.setUseDataConnection(true);
+        mapView.setDrawingCacheEnabled(true);
+        mapView.setMultiTouchControls(true);
+    }
+
+    /*
+   保存地图状态信息
+    */
+    private void saveMapInfo() {
+        dataKeeper.put(PREFS_TILE_SOURCE, mapView.getTileProvider().getTileSource().name());
+        dataKeeper.put(PREFS_ORIENTATION, mapView.getMapOrientation());
+        dataKeeper.put(PREFS_LATITUDE_STRING, String.valueOf(mapView.getMapCenter().getLatitude()));
+        dataKeeper.put(PREFS_LONGITUDE_STRING, String.valueOf(mapView.getMapCenter().getLongitude()));
+        dataKeeper.putInt(PREFS_ZOOM_LEVEL_DOUBLE, mapView.getZoomLevel());
+    }
+
+    /*
+    加载离线
+     */
+    private void loadOffline(String filePath) {
+        Log.d(TAG, "loadOffline: " + filePath);
+        mapViewOtherData(filePath);
+        if (myLocationOverlay.getMyLocation() != null) {
+            mapView.getController().setCenter(myLocationOverlay.getMyLocation());
+        }
+        mapView.setUseDataConnection(false);
+        mapView.setTilesScaledToDpi(true);
+        mapView.setMultiTouchControls(false);
+    }
+
+    public void mapViewOtherData(String strFilepath) {
+        File f = new File(strFilepath);
+        if (f.exists()) {
+            File[] list = f.listFiles();
+            if (list != null) {
+                for (int i = 0; i < list.length; i++) {
+                    if (list[i].isDirectory()) {
+                        continue;
+                    }
+                    String name = list[i].getName().toLowerCase();
+                    if (!name.contains(".")) {
+                        continue; //skip files without an extension
+                    }
+                    name = name.substring(name.lastIndexOf(".") + 1);
+                    if (name.length() == 0) {
+                        continue;
+                    }
+                    if (ArchiveFileFactory.isFileExtensionRegistered(name)) {
+                        try {
+
+                            //ok found a file we support and have a driver for the format, for this demo, we'll just use the first one
+
+                            //create the offline tile provider, it will only do offline file archives
+                            //again using the first file
+                            MBTileProvider provider = new MBTileProvider(new SimpleRegisterReceiver(this), list[i]);
+                            //tell osmdroid to use that provider instead of the default rig which is (asserts, cache, files/archives, online
+                            mapView.setTileProvider(provider);
+                            Log.d(TAG, "mapViewOtherData: " + provider.getMaximumZoomLevel());
+                            String source = "";
+                            this.mapView.setTileSource(provider.getTileSource());
+                            toastUtils.showToast("Using " + list[i].getAbsolutePath() + " " + source);
+                            this.mapView.invalidate();
+                            return;
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                }
+            }
+        } else {
+            toastUtils.showToast(f.getAbsolutePath() + " 该路径已失效");
+        }
+    }
+
+    /*
+    切换离线模式
+     */
+    private void hideAll() {
+        searchCardView.setVisibility(View.GONE);
+        trackRecord.setVisibility(View.GONE);
+    }
+
+    /*
+    切换地图模式
+     */
+    private void showAll() {
+        searchCardView.setVisibility(View.VISIBLE);
+        trackRecord.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * 保存轨迹到本地
+     *
+     * @param name 轨迹名称
+     */
+    private void saveTrackSD(String name) {
+        WriteKml writeKml = new WriteKml(this);
+        try {
+            if (saveType == 12) {
+                writeKml.createKml(name, baseGraphs);//绘制轨迹保存
+            } else if (saveType == 11) {
+                writeKml.createKml(name, locationList, Constant.POLYLINE);//轨迹记录保存
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     /**
-     * 保存轨迹
-     *
-     * @param startTime 开始时间
-     * @param name      轨迹名称
-     * @param geoPoints 轨迹点
-     * @return
+     * @param name
+     * @param type 0,保存轨迹名;1,重命名;2,删除
      */
-    private Track saveTrack(String startTime, String name, List<GeoPoint> geoPoints) {
-        Track track = new Track();
-        for (GeoPoint geoPoint : geoPoints) {
-            Location point = new Location();
-            point.setLatitude(String.valueOf(geoPoint.getLatitude()));
-            point.setLongitude(String.valueOf(geoPoint.getLongitude()));
-            point.save();
-            track.getLocations().add(point);
+    private void askSaveDialog(String name, int type) {
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_view_track_edit, null);
+        final EditText nameEt = (EditText) view.findViewById(R.id.et_track_edit_name);
+        nameEt.setText(name);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(view);
+        if (type == 0) {
+            builder.setTitle(R.string.dialog_track_edit);
+            builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    saveTrackSD(nameEt.getText().toString());
+                    dialog.dismiss();
+                }
+            });
+        } else if (type == 1) {
+            builder.setTitle(R.string.dialog_track_edit);
+            builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    Node node = mData.get(selectedPosition);
+                    node.setName(nameEt.getText().toString());
+                    mData.set(selectedPosition, node);
+                    treeRecyclerAdapter.addDataAll(mData, 1);
+                    dialog.dismiss();
+                }
+            });
         }
-        track.setName(name);
-        track.setStartTime(startTime);
-        track.setTrackSource(1);
-        track.setTrackType(drawType);
-        track.save();
-        return track;
+        builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        builder.create().show();
+    }
+
+    /**
+     * 保存绘制线到内存
+     *
+     * @param geoPoints
+     */
+    private void saveLine(List<GeoPoint> geoPoints) {
+        int pid = (int) root.getId();
+        if (drawType.equals(Constant.POLYLINE)) {
+            if (geoPoints.size() > 1) {
+                isFinished = true;
+                BaseGraph baseGraph = new BaseGraph();
+                baseGraph.setId(baseGraphs.size());
+                baseGraph.setType(drawType);
+                baseGraph.setName("Line#" + baseGraphs.size());
+                baseGraph.getGeoPoints().addAll(PositionUtils.gcjToGps(geoPoints));
+                baseGraphs.add(baseGraph);
+
+                Polyline polyline = new Polyline();
+                polyline.setWidth(5);
+                editLine = polyline;
+
+                Node node = new Node<>(baseGraphs.size() + 1, pid, baseGraph.getName(), baseGraph);
+                node.setChecked(true);
+                mData.add(node);
+            } else {
+                isFinished = false;
+                toastUtils.showSingletonToast("当前绘制轨迹点数过少不能记录该条数据");
+            }
+        } else if (drawType.equals(Constant.POLYGON)) {
+            if (geoPoints.size() > 2) {
+                isFinished = true;
+                BaseGraph baseGraph = new BaseGraph();
+                baseGraph.setId(baseGraphs.size());
+                baseGraph.setType(drawType);
+                baseGraph.setName("Polygon#" + baseGraphs.size());
+                baseGraph.getGeoPoints().addAll(PositionUtils.gcjToGps(geoPoints));
+                baseGraphs.add(baseGraph);
+
+                Polygon polygon = new Polygon();
+                polygon.setStrokeWidth(5);
+                polygon.setFillColor(Color.GRAY);
+                editPolygon = polygon;
+
+                Node node = new Node<>(baseGraphs.size() + 1, pid, baseGraph.getName(), baseGraph);
+                node.setChecked(true);
+                mData.add(node);
+            } else {
+                isFinished = false;
+                toastUtils.showSingletonToast("当前绘制轨迹点数过少不能记录该条数据");
+            }
+        } else if (drawType.equals(Constant.POI)) {
+            if (geoPoints.size()>0){
+                isFinished=true;
+                for (GeoPoint geoPoint : geoPoints) {
+                    BaseGraph baseGraph = new BaseGraph();
+                    baseGraph.setId(baseGraphs.size());
+                    baseGraph.setType(drawType);
+                    baseGraph.setName("Point#" + baseGraphs.size());
+                    baseGraph.getGeoPoints().add(PositionUtils.gcj_To_Gps84(geoPoint));
+                    baseGraphs.add(baseGraph);
+
+                    Node node = new Node<>(baseGraphs.size() + 1, pid, baseGraph.getName(), baseGraph);
+                    node.setChecked(true);
+                    mData.add(node);
+                }
+            }
+
+        }
+        treeRecyclerAdapter.addDataAll(mData, 1);
     }
 
     /**
@@ -794,31 +1283,34 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
      */
     private void drawTrack(List<GeoPoint> geoPoints) {
         switch (drawType) {
-            case 0://画线
-                mapView.getOverlays().remove(polyline);
-                setPolyline(geoPoints);
-                break;
-            case 1://图形
-                mapView.getOverlays().remove(polygon);
-                setPolygon(geoPoints);
-                break;
-            case 2://周长和面积
-                mapView.getOverlays().remove(polygon);
-                setPolygon(geoPoints);
+            case Constant.POLYGON:
+                polygons.add(editPolygon);
+                editPolygon.setPoints(points);
                 if (geoPoints.size() > 2) {
-                    String area = MapMeasureUtils.calculateArea(geoPoints);
+                    double area = MapMeasureUtils.calculateArea(geoPoints);
                     String perimeter = MapMeasureUtils.calculatePerimeter(geoPoints);
+                    String s;
+                    if (area >= 1.0) {
+                        s = "周长：" + perimeter + "米" + "\n" + "面积：" + area + "平方公里";
+                    } else {
+                        s = "周长：" + perimeter + "米" + "\n" + "面积：" + area * 1000000.0 + "平方米";
+                    }
                     BasicInfoWindow in = new BasicInfoWindow(R.layout.bonuspack_bubble, mapView);
-                    polygon.setInfoWindow(in);
-                    String s = "周长：" + perimeter + "米" + "\n" + "面积：" + area + "平方公里";
-                    polygon.setTitle(s);
+                    editPolygon.setInfoWindow(in);
+                    editPolygon.setTitle(s);
                 }
+                break;
+            case Constant.POLYLINE:
+                polylines.add(editLine);
+                editLine.setPoints(geoPoints);
+                break;
+            default:
                 break;
         }
     }
 
     /**
-     * 显示地图
+     * 显示在线地图
      */
     private void showMapView() {
         int mapSource = dataKeeper.getInt(Constant.PREFS_MAP_SOURCE, 0);
@@ -843,42 +1335,98 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     private void showMapType() {
         normalMap.setVisibility(View.VISIBLE);
         satelliteMap.setVisibility(View.VISIBLE);
-        boolean normal = dataKeeper.get(Constant.PREFS_NORMAL_MAP_STATE, true);
-        boolean satellite = dataKeeper.get(Constant.PREFS_SATELLITE_STATE, false);
-        normalMap.setSelected(normal);
-        satelliteMap.setSelected(satellite);
+        if (isOnline) {
+            boolean normal = dataKeeper.get(Constant.PREFS_NORMAL_MAP_STATE, true);
+            boolean satellite = dataKeeper.get(Constant.PREFS_SATELLITE_STATE, false);
+            normalMap.setSelected(normal);
+            satelliteMap.setSelected(satellite);
+        } else if (isOffline) {
+            boolean normal = dataKeeper.get(Constant.PREFS_OFFLINE_ELECTRIC_STATE, true);
+            boolean satellite = dataKeeper.get(Constant.PREFS_OFFLINE_SATELLITE_STATE, false);
+            normalMap.setSelected(normal);
+            satelliteMap.setSelected(satellite);
+        }
+    }
+
+    /*
+    显示离线地图
+     */
+    private void showOfflineMap() {
+        boolean mapState = dataKeeper.get(Constant.PREFS_OFFLINE_ELECTRIC_STATE, true);
+        String elePath = dataKeeper.get(Constant.PREFS_OFFLINE_ELE_PATH, "");
+        String satelPath = dataKeeper.get(Constant.PREFS_OFFLINE_SATEL_PATH, "");
+        if (mapState) {
+            if (!TextUtils.isEmpty(elePath)) {
+                loadOffline(elePath);
+            } else {
+                toastUtils.showSingletonToast("没有配置有效离线电子地图路径");
+            }
+        } else {
+            if (!TextUtils.isEmpty(satelPath)) {
+                loadOffline(satelPath);
+            } else {
+                toastUtils.showSingletonToast("没有配置有效离线卫星地图路径");
+            }
+        }
+
     }
 
     /**
      * 显示地图源
      */
     private void showMapSource() {
+        dividerView.setVisibility(View.VISIBLE);
         mapSourceList.setVisibility(View.VISIBLE);
-        mapSourceList.setLayoutManager(new GridLayoutManager(this, 2));
         //如果可以确定每个item的高度是固定的，设置这个选项可以提高性能
         mapSourceList.setHasFixedSize(true);
+        if (isOnline) {
+            mapSourceList.setLayoutManager(new GridLayoutManager(this, 2));
+            List<Map> maps = new ArrayList<>();
+            maps.add(new Map(R.drawable.ic_map_google, "谷歌"));
+            maps.add(new Map(R.drawable.ic_map_osm, "OSM"));
+            maps.add(new Map(R.drawable.ic_map_amap, "高德"));
+            maps.add(new Map(R.drawable.ic_map_baidu, "百度"));
 
-        List<Map> maps = new ArrayList<>();
-        maps.add(new Map(R.drawable.ic_map_google, "谷歌"));
-        maps.add(new Map(R.drawable.ic_map_osm, "OSM"));
-        maps.add(new Map(R.drawable.ic_map_amap, "高德"));
-        maps.add(new Map(R.drawable.ic_map_baidu, "百度"));
-
-        final MapSourceAdapter adapter = new MapSourceAdapter(this);
-        adapter.setDataList(maps);
-        mapSourceList.setAdapter(adapter);
-        int SelectedMapSource = dataKeeper.getInt(Constant.PREFS_MAP_SOURCE, 0);
-        adapter.setItemSelected(SelectedMapSource);
-        adapter.setOnItemListener(new MapSourceAdapter.OnItemListener() {
-            @Override
-            public void onClick(View v, int pos, Object data) {
-                Map map = (Map) data;
-                mapModeBtn.setImageResource(map.getMapIcon());
-                adapter.setItemSelected(pos);
-                dataKeeper.putInt(Constant.PREFS_MAP_SOURCE, pos);
-                showMapView();
+            final MapSourceAdapter adapter = new MapSourceAdapter(this);
+            adapter.setDataList(maps);
+            mapSourceList.setAdapter(adapter);
+            int selectedMapSource = dataKeeper.getInt(Constant.PREFS_MAP_SOURCE, 0);
+            adapter.setItemSelected(selectedMapSource);
+            adapter.setOnItemListener(new OnItemListener() {
+                @Override
+                public void onClick(View v, int pos, Object data) {
+                    Map map = (Map) data;
+                    mapModeBtn.setImageResource(map.getMapIcon());
+                    adapter.setItemSelected(pos);
+                    dataKeeper.putInt(Constant.PREFS_MAP_SOURCE, pos);
+                    showMapView();
+                }
+            });
+            showMapType();
+        } else if (isOffline) {
+            offlineBtn.setVisibility(View.VISIBLE);
+            mapSourceList.setLayoutManager(new LinearLayoutManager(this));
+            List<OfflineMap> offlineMaps = DataSupport.findAll(OfflineMap.class);
+            if (offlineMaps.size() > 0) {
+                int selectedSource = dataKeeper.getInt(Constant.PREFS_OFFLINE_MAP_SOURCE, -1);
+                final OfflineMapSourceAdapter adapter = new OfflineMapSourceAdapter(this);
+                adapter.setData(offlineMaps);
+                mapSourceList.setAdapter(adapter);
+                adapter.setItemSelected(selectedSource);
+                adapter.setOnItemListener(new OnItemListener() {
+                    @Override
+                    public void onClick(View v, int pos, Object data) {
+                        OfflineMap offlineMap = (OfflineMap) data;
+                        adapter.setItemSelected(pos);
+                        dataKeeper.putInt(Constant.PREFS_OFFLINE_MAP_SOURCE, pos);
+                        dataKeeper.put(Constant.PREFS_OFFLINE_ELE_PATH, offlineMap.getElePath());
+                        dataKeeper.put(Constant.PREFS_OFFLINE_SATEL_PATH, offlineMap.getSatelPath());
+                        showOfflineMap();
+                    }
+                });
+                showMapType();
             }
-        });
+        }
     }
 
     /**
@@ -886,19 +1434,25 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
      */
     private void hideKeyboard() {
         searchText.setCursorVisible(false);
-        searchCardView.setCardBackgroundColor(ContextCompat.getColor(this, R.color.translucent_white_65));
+        searchCardView.setCardBackgroundColor(ContextCompat.getColor(this, R.color.translucent_white_55));
         InputMethodManager inputMethodManager = (InputMethodManager) this
                 .getSystemService(Context.INPUT_METHOD_SERVICE);
         inputMethodManager.hideSoftInputFromWindow(searchText.getWindowToken(), 0);
     }
 
     /**
-     * 隐藏地图选择
+     * 隐藏地图源
      */
     private void hideMapSource() {
+        dividerView.setVisibility(View.GONE);
         mapSourceList.setVisibility(View.GONE);
+        offlineBtn.setVisibility(View.GONE);
+        hideMapType();
     }
 
+    /**
+     * 隐藏地图类型
+     */
     private void hideMapType() {
         normalMap.setVisibility(View.GONE);
         satelliteMap.setVisibility(View.GONE);
@@ -911,10 +1465,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         @Override
         public void onReceive(Context context, Intent intent) {
             Bundle bundle = intent.getExtras();
-            locationList = bundle.getParcelableArrayList("saveGps");
-            if (locationList.size() > 1) {
-                mapView.getOverlays().remove(polyline);
-                setPolyline(locationList);
+            List<Location> tempList= bundle.getParcelableArrayList("saveGps");
+            ArrayList<GeoPoint> convertedList = PositionUtils.wgsToGcj(tempList);
+            if (tempList.size() > 1) {
+                gpsLine.setPoints(convertedList);
+                for (Location location: tempList){
+                    locationList.add(new GeoPoint(location));
+                }
             }
         }
     }
@@ -949,28 +1506,84 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         startActivityForResult(intent, 0);
     }
 
-    /**
-     * @param requestCode
-     * @param resultCode
-     * @param data
-     */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == 33) {
-            long trackId = data.getLongExtra("trackId", -1);
-            String track_id = String.valueOf(trackId);
-            if (trackId > -1) {
-                List<Location> locations = DataSupport.where("track_id = ?", track_id).find(Location.class);
-                ArrayList<GeoPoint> geoPoints = new ArrayList<>();
-                for (Location location : locations) {
-                    geoPoints.add(new GeoPoint(Double.valueOf(location.getLatitude()), Double.valueOf(location.getLongitude())));
+            isMyTrack = true;
+            String filePath = data.getStringExtra("filePath");
+            ReadKml readKml = new ReadKml();
+            try {
+                readKml.parseKml(filePath);
+                List<BaseGraph> graphs = readKml.getBaseGraphs();
+                for (BaseGraph baseGraph : graphs) {
+                    switch (baseGraph.getType()) {
+                        case Constant.POI:
+                            poiMarkers = new FolderOverlay();
+                            mapView.getOverlays().add(poiMarkers);
+                            addPoi(baseGraph);
+                            Log.d(TAG, "onActivityResult: poiMarkers=" + poiMarkers.getItems().size());
+                            break;
+                        case Constant.POLYGON:
+                            addPolygon(baseGraph);
+                            break;
+                        case Constant.POLYLINE:
+                            addLine(baseGraph);
+                            break;
+                        default:
+                            break;
+                    }
                 }
-                setPolyline(geoPoints);
-                final BoundingBox boundingBox = BoundingBox.fromGeoPoints(geoPoints);
+                List<GeoPoint> gcjPoints = PositionUtils.wgsToGcj02(readKml.getGeoPoints());
+                final BoundingBox boundingBox = BoundingBox.fromGeoPoints(gcjPoints);
                 mapView.zoomToBoundingBox(boundingBox, true);
-//                mapView.getController().animateTo(boundingBox.getCenter());
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
 
+    /*
+    添加点
+     */
+    private void addPoi(BaseGraph baseGraph) {
+        for (GeoPoint geoPoint : baseGraph.getGeoPoints()) {
+            Marker marker = new Marker(mapView);
+            marker.setPosition(PositionUtils.gps84_To_Gcj02(geoPoint));
+            marker.setTitle(baseGraph.getName());
+            marker.setSnippet("经度="+geoPoint.getLongitude()+",\n\n纬度="+geoPoint.getLatitude());
+            marker.setAnchor(Marker.ANCHOR_CENTER,Marker.ANCHOR_BOTTOM);
+            marker.setInfoWindowAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+            poiMarkers.add(marker);
+        }
+    }
+
+    /*
+    添加线
+     */
+    private void addLine(BaseGraph baseGraph) {
+        Polyline polyline = new Polyline();
+        polyline.setWidth(5);
+        polyline.setPoints(PositionUtils.wgsToGcj02(baseGraph.getGeoPoints()));
+        mapView.getOverlays().add(polyline);
+    }
+
+    /*
+    添加多边形
+     */
+    private void addPolygon(BaseGraph baseGraph) {
+        Polygon polygon = new Polygon();
+        polygon.setStrokeWidth(5);
+        polygon.setFillColor(Color.GRAY);
+        polygon.setPoints(PositionUtils.wgsToGcj02(baseGraph.getGeoPoints()));
+        mapView.getOverlays().add(polygon);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (mDrawerLayout.isDrawerOpen(Gravity.LEFT)) {
+            mDrawerLayout.closeDrawers();
+            return;
+        }
+        super.onBackPressed();
+    }
 }

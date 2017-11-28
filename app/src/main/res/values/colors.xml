@@ -3,7 +3,11 @@
     <color name="colorAccent">#FF4081</color>
     <color name="white">#FFFFFF</color><!--白色 -->
     <color name="darkgrey">#a9a9a9</color><!--暗灰色 -->
+    <color name="grey">#6E6E6E</color><!--暗灰色 -->
+    <color name="translucent_white_75">#40ffffff</color>
     <color name="translucent_white_65">#59ffffff</color><!--半透明 -->
+    <color name="translucent_white_55">#73ffffff</color>
+    <color name="translucent_white_45">#78ffffff</color>
     <color name="translucent_white_40">#99ffffff</color>
     <color name="translucent_white_20">#ccffffff</color>
     <color name="bg_map_type">#F0F0F0</color>

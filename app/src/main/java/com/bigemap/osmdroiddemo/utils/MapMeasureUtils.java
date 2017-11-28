@@ -48,7 +48,7 @@ public class MapMeasureUtils implements MathConstants,GeoConstants{
      * @param points 经纬度坐标
      * @return area 单位：平方公里
      */
-    public static String calculateArea(List<GeoPoint> points) {
+    public static double calculateArea(List<GeoPoint> points) {
         double areaMeters2 = PlanarPolygonAreaMeters2(points);
         double squareKilometer = areaMeters2 / 1000000.0;
         if (areaMeters2 > 1000000.0) {
@@ -56,7 +56,7 @@ public class MapMeasureUtils implements MathConstants,GeoConstants{
             squareKilometer = areaMeters2 / 1000000.0;
         }
         Log.d(TAG, "面积为：" + squareKilometer + "（平方公里）");
-        return String.valueOf(squareKilometer);
+        return squareKilometer;
     }
 
     /**

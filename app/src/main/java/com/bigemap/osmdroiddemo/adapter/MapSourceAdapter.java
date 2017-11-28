@@ -1,14 +1,10 @@
 package com.bigemap.osmdroiddemo.adapter;
 
 import android.content.Context;
-import android.graphics.Color;
-import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.bigemap.osmdroiddemo.R;
@@ -16,6 +12,7 @@ import com.bigemap.osmdroiddemo.constants.Constant;
 import com.bigemap.osmdroiddemo.entity.Map;
 import com.bigemap.osmdroiddemo.utils.DataKeeper;
 import com.bigemap.osmdroiddemo.viewholder.BaseRecyclerViewHolder;
+import com.bigemap.osmdroiddemo.viewholder.OnItemListener;
 
 import java.util.List;
 
@@ -34,8 +31,8 @@ public class MapSourceAdapter extends BaseRecyclerViewAdapter<MapSourceAdapter.V
 
     public MapSourceAdapter(Context context) {
         this.context = context;
-        dataKeeper=new DataKeeper(context, Constant.PREFS_NAME);
-        defItem=dataKeeper.getInt(Constant.PREFS_MAP_SOURCE, 0);
+        dataKeeper = new DataKeeper(context, Constant.PREFS_NAME);
+        defItem = dataKeeper.getInt(Constant.PREFS_MAP_SOURCE, 0);
         this.inflater = LayoutInflater.from(context);
     }
 
@@ -48,9 +45,6 @@ public class MapSourceAdapter extends BaseRecyclerViewAdapter<MapSourceAdapter.V
         this.onItemListener = onItemListener;
     }
 
-    public interface OnItemListener {
-        void onClick(View v, int pos, Object data);
-    }
 
     public void setItemSelected(int position) {
         this.defItem = position;
@@ -70,7 +64,7 @@ public class MapSourceAdapter extends BaseRecyclerViewAdapter<MapSourceAdapter.V
         holder.bind(map);
         if (defItem == position) {
             holder.mapIcon.setSelected(true);
-        }else{
+        } else {
             holder.mapIcon.setSelected(false);
         }
     }
@@ -81,13 +75,11 @@ public class MapSourceAdapter extends BaseRecyclerViewAdapter<MapSourceAdapter.V
     }
 
     class ViewHolder extends BaseRecyclerViewHolder implements View.OnClickListener {
-        FrameLayout mapSource;
         ImageView mapIcon;
         TextView mapName;
 
         private ViewHolder(View itemView) {
             super(itemView);
-            mapSource = (FrameLayout) itemView.findViewById(R.id.ll_map_source);
             mapIcon = (ImageView) itemView.findViewById(R.id.iv_map_source_icon);
             mapName = (TextView) itemView.findViewById(R.id.tv_map_source_name);
             itemView.setOnClickListener(this);

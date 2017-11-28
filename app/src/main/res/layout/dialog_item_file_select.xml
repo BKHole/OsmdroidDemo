@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/selector_btn_common"
+    android:orientation="horizontal"
+    android:padding="4dp">
+
+    <com.bigemap.osmdroiddemo.view.IconView
+        android:id="@+id/img_item_dialog_file"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:layout_gravity="center_vertical"
+        android:text="@string/folder"
+        android:textSize="36sp" />
+
+    <TextView
+        android:id="@+id/tv_offline_map_name"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_gravity="center_vertical"
+        android:gravity="center_vertical"
+        android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
+        tools:text="名字" />
+
+</LinearLayout>

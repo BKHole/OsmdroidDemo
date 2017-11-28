@@ -5,8 +5,13 @@
     <string name="map">&#xE960;</string>
     <string name="edit">&#xE977;</string>
     <string name="track">&#xE9C5;</string>
+    <string name="offline">&#xE985;</string>
     <string name="mine">&#xE900;</string>
     <string name="track_start">&#xE9C3;</string>
     <string name="track_stop">&#xE9C0;</string>
-    <string name="empty">&#xE9B2;</string>
+    <string name="file_directory">&#xE939;</string>
+    <string name="folder">&#xE93A;</string>
+    <string name="file">&#xE9BE;</string>
+    <string name="icon_offline_map_source">&#xE92E;</string>
+    <string name="dialog_track_edit">请编辑保存内容信息</string>
 </resources>
