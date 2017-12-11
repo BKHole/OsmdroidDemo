@@ -8,6 +8,8 @@ import com.squareup.leakcanary.RefWatcher;
 import com.zhy.http.okhttp.OkHttpUtils;
 
 import org.litepal.LitePalApplication;
+import org.osmdroid.tileprovider.modules.ArchiveFileFactory;
+import org.osmdroid.tileprovider.modules.MBTilesFileArchive;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +31,7 @@ public class MainApplication extends LitePalApplication {
         CrashHandler.getInstance().init(this);
         ForegroundObserver.init(this);
         initOkHttpUtils();
+        ArchiveFileFactory.registerArchiveFileProvider(MBTilesFileArchive.class, "bmdb");
     }
 
     public static RefWatcher getRefWatcher(Context context) {

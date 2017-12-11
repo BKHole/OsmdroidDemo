@@ -202,9 +202,9 @@ public class PositionUtils {
         return ret;
     }
 
-    public static ArrayList<GeoPoint> wgsToGcj(List<Location> locations){
+    public static ArrayList<GeoPoint> wgsToGcj(ArrayList<GeoPoint> locations){
         ArrayList<GeoPoint> geoPoints=new ArrayList<>();
-        for (Location location: locations){
+        for (GeoPoint location: locations){
             geoPoints.add(gps84_To_Gcj02(location));
         }
         return geoPoints;

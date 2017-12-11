@@ -13,6 +13,7 @@ import android.location.LocationProvider;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.Parcelable;
 import android.os.PowerManager;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -21,33 +22,34 @@ import com.bigemap.osmdroiddemo.R;
 import com.bigemap.osmdroiddemo.activity.MainActivity;
 import com.bigemap.osmdroiddemo.utils.PermissionUtils;
 
-import java.util.ArrayList;
+import org.osmdroid.util.GeoPoint;
 
 public class MyLocationService extends Service implements LocationListener {
     private static final String TAG = "MyLocationService";
-    private static final int UPDATE_TIME = 2000;
-    private static final int UPDATE_DISTANCE = 5;
+    private static final int UPDATE_TIME = 1000;
+    private static final int UPDATE_DISTANCE = 10;
 
     private NotificationManager mNotificationManager;
-    public ArrayList<Location> locationArrayList;
     private LocationManager locationManager;
     private PowerManager.WakeLock wakeLock;
     private String networkProvider = LocationManager.NETWORK_PROVIDER;
     private String gpsProvider = LocationManager.GPS_PROVIDER;
+    private Intent intent;
+    public Location previousBestLocation = null;
 
     @Override
     public void onCreate() {
         super.onCreate();
         Log.d(TAG, "onCreate: ");
-        locationArrayList = new ArrayList<>();
+        intent = new Intent();
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+//        mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "onStartCommand: ");
-        showNotification();
+//        showNotification();
         acquireWakeLock();
         if (PermissionUtils.checkLocationPermission(this)) {
             locationManager.requestLocationUpdates(gpsProvider, UPDATE_TIME, UPDATE_DISTANCE, this);
@@ -60,9 +62,7 @@ public class MyLocationService extends Service implements LocationListener {
         super.onDestroy();
         Log.d(TAG, "onDestroy: ");
         releaseWakeLock();
-        clearNotification();
-        locationArrayList.clear();
-        locationArrayList = null;
+//        clearNotification();
         if (locationManager != null) {
             locationManager.removeUpdates(this);
             locationManager = null;
@@ -119,8 +119,8 @@ public class MyLocationService extends Service implements LocationListener {
             } else {
                 locationManager.requestLocationUpdates(networkProvider, UPDATE_TIME, UPDATE_DISTANCE, this);
             }
-            Location location = locationManager.getLastKnownLocation(provider);
-            addCoordinates(location);
+//            Location location = locationManager.getLastKnownLocation(provider);
+//            addCoordinates(location);
         }
     }
 
@@ -160,35 +160,93 @@ public class MyLocationService extends Service implements LocationListener {
         mNotificationManager.cancel(1);
     }
 
+    /**
+     * Checks whether two providers are the same
+     */
+    private boolean isSameProvider(String provider1, String provider2) {
+        if (provider1 == null) {
+            return provider2 == null;
+        }
+        return provider1.equals(provider2);
+    }
+    /**
+     * 判断新定位是否满足要求
+     * @param location previousBestLocation
+     * @param currentBestLocation locationChanged
+     * @return boolean
+     */
+    protected boolean isBetterLocation(Location location, Location currentBestLocation) {
+        if (currentBestLocation == null) {
+            // A new location is always better than no location
+            return true;
+        }
+        // Check whether the new location fix is newer or older
+        long timeDelta = location.getTime() - currentBestLocation.getTime();
+        boolean isSignificantlyNewer = timeDelta > UPDATE_TIME;
+        boolean isSignificantlyOlder = timeDelta < -UPDATE_TIME;
+        boolean isNewer = timeDelta > 0;
+
+        // If it's been more than two minutes since the current location, use the new location
+        // because the user has likely moved
+        if (isSignificantlyNewer) {
+            return true;
+            // If the new location is more than two minutes older, it must be worse
+        } else if (isSignificantlyOlder) {
+            return false;
+        }
+
+        // Check whether the new location fix is more or less accurate
+        int accuracyDelta = (int) (location.getAccuracy() - currentBestLocation.getAccuracy());
+        boolean isLessAccurate = accuracyDelta > 0;
+        boolean isMoreAccurate = accuracyDelta < 0;
+        boolean isSignificantlyLessAccurate = accuracyDelta > 200;
+
+        // Check if the old and new location are from the same provider
+        boolean isFromSameProvider = isSameProvider(location.getProvider(),
+                currentBestLocation.getProvider());
+
+        // Determine location quality using a combination of timeliness and accuracy
+        if (isMoreAccurate) {
+            return true;
+        } else if (isNewer && !isLessAccurate) {
+            return true;
+        } else if (isNewer && !isSignificantlyLessAccurate && isFromSameProvider) {
+            return true;
+        }
+        return false;
+    }
     // 将GPS数据放入集合中
     public void addCoordinates(Location mLocation) {
         if (null != mLocation) {
-            locationArrayList.add(mLocation);
-            if (!MainActivity.isBackground){
-                sendLocation(locationArrayList);
+            GeoPoint newPoint=new GeoPoint(mLocation);
+            if (isBetterLocation(mLocation, previousBestLocation)){
+                previousBestLocation=mLocation;
+                sendLocation(newPoint);
             }
         }
     }
 
     /**
      * 将数据传递到activity中
-     * @param list 定位数据列表
+     * @param geoPoint
      */
-    private void sendLocation(ArrayList<Location> list) {
-//        ArrayList<GeoPoint> convertedList = PositionUtils.wgsToGcj(list);
-        Intent intent = new Intent();
-        intent.putParcelableArrayListExtra("saveGps", list);
+    private void sendLocation(GeoPoint geoPoint) {
+        intent.putExtra("location", (Parcelable) geoPoint);
         intent.setAction("com.bigemap.osmdroiddemo.service.intent.locationList");
         sendBroadcast(intent);
     }
 
     /**
      * 睡眠状态唤醒定位
+     * PARTIAL_WAKE_LOCK :保持CPU 运转，屏幕和键盘灯有可能是关闭的。
+     * SCREEN_DIM_WAKE_LOCK ：保持CPU 运转，允许保持屏幕显示但有可能是灰的，允许关闭键盘灯
+     * SCREEN_BRIGHT_WAKE_LOCK ：保持CPU 运转，允许保持屏幕高亮显示，允许关闭键盘灯
+     * FULL_WAKE_LOCK ：保持CPU 运转，保持屏幕高亮显示，键盘灯也保持亮度
      */
     private void acquireWakeLock() {
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         if (wakeLock == null) {
-            wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "wakeLock");
+            wakeLock = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK , "wakeLock");
             if (!wakeLock.isHeld()) {
                 wakeLock.acquire();
             }

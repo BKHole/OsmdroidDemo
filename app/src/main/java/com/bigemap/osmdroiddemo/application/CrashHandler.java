@@ -56,14 +56,7 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
     @Override
     public void uncaughtException(Thread thread, Throwable ex) {
         Log.e(CrashHandler.class.getSimpleName(), "boom!boom!boom!");
-        if (writeBoom(thread, ex)) {
-            File crash = new File(MainApplication.getCrashReportsPath() + "/crashed");
-            try {
-                new FileOutputStream(crash).close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        writeBoom(thread, ex);
         if (defaultHandler != null) {
             defaultHandler.uncaughtException(thread, ex);
         }

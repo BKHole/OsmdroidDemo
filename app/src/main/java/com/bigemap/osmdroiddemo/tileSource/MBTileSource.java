@@ -1,6 +1,6 @@
 /**
  * Created on August 12, 2012
- * 
+ *
  * @author Melle Sieswerda
  */
 package com.bigemap.osmdroiddemo.tileSource;
@@ -11,12 +11,21 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Log;
 
+import com.bigemap.osmdroiddemo.constants.Constant;
+
 import org.osmdroid.tileprovider.MapTile;
 import org.osmdroid.tileprovider.tilesource.BitmapTileSourceBase;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 public class MBTileSource extends BitmapTileSourceBase {
 
@@ -40,7 +49,7 @@ public class MBTileSource extends BitmapTileSourceBase {
      * The reason this constructor is protected is because all parameters,
      * except file should be determined from the archive file. Therefore a
      * factory method is necessary.
-     * 
+     *
      * @param minZoom
      * @param maxZoom
      * @param tileSizePixels
@@ -59,11 +68,11 @@ public class MBTileSource extends BitmapTileSourceBase {
 
     /**
      * Creates a new MBTileSource from file.
-     * 
+     *
      * Parameters minZoom, maxZoom en tileSizePixels are obtained from the
      * database. If they cannot be obtained from the DB, the default values as
      * defined by this class are used.
-     * 
+     *
      * @param file
      * @return
      */
@@ -90,12 +99,29 @@ public class MBTileSource extends BitmapTileSourceBase {
 
         // Get the tile size
         Cursor cursor = db.rawQuery("SELECT tile_data FROM tiles LIMIT 0,1",
-                                    new String[] {});
-
+                new String[]{});
         if (cursor.getCount() != 0) {
+//            StringBuffer buffer = new StringBuffer();
             cursor.moveToFirst();
-            is = new ByteArrayInputStream(cursor.getBlob(0));
+            byte[] temp = cursor.getBlob(0);
+            if (temp.length > 1500) {
+                byte a = temp[temp.length - 1];
+                for (int i = 500; i < 1500; i++) {
+                    temp[i] ^= a;
+//                    temp[i] ^= a;
+//                    buffer.append(toHexString1(temp[i]));
+                }
+            }
+            try {
+                FileWriter fw = new FileWriter(new File(Constant.APP_BASE_PATH, "2p-2"));
+                BufferedWriter out = new BufferedWriter(fw);
+                out.write(toHexString1(temp));
+                out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
+            is = new ByteArrayInputStream(temp, 0, temp.length-1);
             Bitmap bitmap = BitmapFactory.decodeStream(is);
             tileSize = bitmap.getHeight();
         }
@@ -106,8 +132,25 @@ public class MBTileSource extends BitmapTileSourceBase {
         return new MBTileSource(minZoomLevel, maxZoomLevel, tileSize, file, db);
     }
 
+    public static String toHexString1(byte[] b) {
+        StringBuffer buffer = new StringBuffer();
+        for (int i = 0; i < b.length-1; ++i) {
+            buffer.append(toHexString1(b[i]));
+        }
+        return buffer.toString();
+    }
+
+    public static String toHexString1(byte b) {
+        String s = Integer.toHexString(b & 0xFF);
+        if (s.length() == 1) {
+            return "0" + s;
+        } else {
+            return s;
+        }
+    }
+
     protected static int getInt(SQLiteDatabase db, String sql) {
-        Cursor cursor = db.rawQuery(sql, new String[] {});
+        Cursor cursor = db.rawQuery(sql, new String[]{});
         int value = -1;
 
         if (cursor.getCount() != 0) {
@@ -123,32 +166,38 @@ public class MBTileSource extends BitmapTileSourceBase {
 
         try {
             InputStream ret = null;
-            final String[] tile = { COL_TILES_TILE_DATA };
-            final String[] xyz = { Integer.toString(pTile.getX()),
-                                   Double.toString(Math.pow(2, pTile.getZoomLevel()) - pTile.getY() - 1),
-                                   Integer.toString(pTile.getZoomLevel()) };
+            final String[] tile = {COL_TILES_TILE_DATA};
+            final String[] xyz = {Integer.toString(pTile.getX()),
+                    Double.toString(Math.pow(2, pTile.getZoomLevel()) - pTile.getY() - 1),
+                    Integer.toString(pTile.getZoomLevel())};
 
             final Cursor cur = database.query(TABLE_TILES,
-                                              tile,
-                                              "tile_column=? and tile_row=? and zoom_level=?",
-                                              xyz,
-                                              null,
-                                              null,
-                                              null);
+                    tile,
+                    "tile_column=? and tile_row=? and zoom_level=?",
+                    xyz,
+                    null,
+                    null,
+                    null);
 
             if (cur.getCount() != 0) {
                 cur.moveToFirst();
-                ret = new ByteArrayInputStream(cur.getBlob(0));
+                byte[] temp = cur.getBlob(0);
+                if (temp.length > 1500) {
+                    byte a = temp[temp.length - 1];
+                    for (int i = 500; i < 1500; i++) {
+                        temp[i] ^= a;
+                    }
+                }
+                ret = new ByteArrayInputStream(temp, 0, temp.length-1);
             }
-            
             cur.close();
-            
+
             if (ret != null) {
                 return ret;
             }
-            
+
         } catch (final Throwable e) {
-            Log.w(TAG, "\"Error getting db stream: \" + pTile" +e);
+            Log.w(TAG, "\"Error getting db stream: \" + pTile" + e);
         }
         return null;
     }

@@ -10,7 +10,6 @@ import android.content.IntentFilter;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
-import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -19,7 +18,6 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.CardView;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -60,14 +58,14 @@ import com.bigemap.osmdroiddemo.http.HttpClient;
 import com.bigemap.osmdroiddemo.kml.ReadKml;
 import com.bigemap.osmdroiddemo.kml.WriteKml;
 import com.bigemap.osmdroiddemo.overlay.MyLocationOverlay;
-import com.bigemap.osmdroiddemo.service.MyLocationService;
+import com.bigemap.osmdroiddemo.overlay.MyPolyline;
+import com.bigemap.osmdroiddemo.service.LocationService;
 import com.bigemap.osmdroiddemo.tileSource.GoogleMapsTileSource;
 import com.bigemap.osmdroiddemo.tileSource.GoogleSatelliteTileSource;
 import com.bigemap.osmdroiddemo.tileSource.MBTileProvider;
 import com.bigemap.osmdroiddemo.treelist.Node;
 import com.bigemap.osmdroiddemo.treelist.OnTreeNodeClickListener;
 import com.bigemap.osmdroiddemo.utils.DateUtils;
-import com.bigemap.osmdroiddemo.utils.DialogUtils;
 import com.bigemap.osmdroiddemo.utils.MapMeasureUtils;
 import com.bigemap.osmdroiddemo.utils.PermissionUtils;
 import com.bigemap.osmdroiddemo.utils.PositionUtils;
@@ -79,7 +77,6 @@ import com.zhy.http.okhttp.callback.StringCallback;
 import org.litepal.crud.DataSupport;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.MapTileProviderBasic;
-import org.osmdroid.tileprovider.modules.ArchiveFileFactory;
 import org.osmdroid.tileprovider.tilesource.ITileSource;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.tileprovider.util.SimpleRegisterReceiver;
@@ -91,7 +88,6 @@ import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Overlay;
 import org.osmdroid.views.overlay.OverlayWithIW;
 import org.osmdroid.views.overlay.Polygon;
-import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.ScaleBarOverlay;
 import org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider;
 import org.osmdroid.views.overlay.infowindow.BasicInfoWindow;
@@ -119,6 +115,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     public static final String GOOGLE_SATELLITE = "Google卫星图";
     private ScaleBarOverlay mScaleBarOverlay;//比例尺
     private MyLocationOverlay myLocationOverlay; //定位显示
+    private GpsMyLocationProvider gps;
 
     @Bind(R.id.drawer_layout)
     private DrawerLayout mDrawerLayout;//侧边栏
@@ -139,7 +136,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     private LinearLayout tabOffline;//离线
     //    @Bind(R.id.main_tab_mine)
 //    private LinearLayout tabMine;//我
-    //轨迹绘制操作
+    //轨迹绘制操作/
     @Bind(R.id.edit_bottom_tool_ly)
     private LinearLayout editBottomTool;//底部编辑父控件
     @Bind(R.id.btn_edit_undo)
@@ -172,7 +169,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
 
     //搜索框
     @Bind(R.id.search_box)
-    private CardView searchCardView;
+    private LinearLayout searchBox;
     @Bind(R.id.search_editText)
     private AutoCompleteTextView searchText;
     @Bind(R.id.edit_text_clear)
@@ -187,9 +184,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     private String drawType = "";//0:画线，1:图形，2:周长和面积，3:导入
     private List<GeoPoint> points;//编辑模式描点记录
 
-    private List<GeoPoint> locationList;//轨迹记录定位
+    private ArrayList<GeoPoint> locationList;//轨迹记录定位
     private MyReceiver myReceiver;
-    private boolean isRecording = true;//是否正在记录轨迹
+    private boolean isRecording = false;//是否正在记录轨迹
     private boolean isMapChanged = true;//地图源状态
     private boolean isFullScreen = true;//是否全屏显示
     private boolean isEditMode = false;//是否处于编辑模式
@@ -212,21 +209,24 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     @Bind(R.id.btn_add_offline)
     private Button offlineBtn;
 
-    private List<Tip> tips;
     public static boolean isBackground = true;
+    private List<Tip> tips;
     private List<Node> mData;
     private List<BaseGraph> baseGraphs;
-    private FolderOverlay poiMarkers;
-    private Polyline gpsLine = null;//记录的轨迹
-    private Polyline editLine = null;
-    private Polygon editPolygon = null;
-    private List<Marker> markers;
-    private FolderOverlay polylines;
-    private FolderOverlay polygons;
+//    private FolderOverlay poiMarkers;//导入kml中所有点
+    private MyPolyline gpsLine = null;//gps记录的轨迹
+    private MyPolyline editLine = null;//当前正在编辑的轨迹
+    private Polygon editPolygon = null;//当前正在编辑的多边形
+//    private List<Marker> markers;
+    private FolderOverlay polylines;//当前正在编辑的所有轨迹
+    private FolderOverlay polygons;//当前正在编辑的所有多边形
+    private FolderOverlay tempMarkers;//当前正在编辑的多边形的点
+    private FolderOverlay markers;//当前正在编辑的点
     private SimpleTreeRecyclerAdapter treeRecyclerAdapter;
-    private Node root;
-    private int selectedPosition = -1;
+    private Node root;//根节点
+    private int selectedPosition = -1;//当前状态未选中
     private int saveType;
+    private AlertDialog.Builder builder;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -261,8 +261,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         mapView.getOverlays().add(mScaleBarOverlay);
 
         //显示定位
-        GpsMyLocationProvider gps = new GpsMyLocationProvider(this);
-        gps.setLocationUpdateMinTime(2000);//默认两秒钟更新一次
+        gps = new GpsMyLocationProvider(this);
+        gps.setLocationUpdateMinTime(1000);//默认两秒钟更新一次
         gps.addLocationSource(LocationManager.NETWORK_PROVIDER);
         myLocationOverlay = new MyLocationOverlay(gps, mapView);
         myLocationOverlay.setDrawAccuracyEnabled(false);
@@ -293,7 +293,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         locationList = new ArrayList<>();
         mData = new ArrayList<>();
         baseGraphs = new ArrayList<>();
-
+        initEditData();
     }
 
     private void initView() {
@@ -301,7 +301,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         mDrawerLayout.setScrimColor(Color.TRANSPARENT);
         mDrawerLayout.addDrawerListener(drawerListener);
         tabMap.setSelected(true);
-        searchCardView.setCardBackgroundColor(ContextCompat.getColor(this, R.color.translucent_white_55));
 
         locationBtn.setOnClickListener(this);
         mapModeBtn.setOnClickListener(this);
@@ -347,7 +346,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
             mapView.setTileSource(tileSource);
         } catch (final IllegalArgumentException e) {
             mapView.setTileSource(TileSourceFactory.DEFAULT_TILE_SOURCE);
-//            myLocationOverlay.setTileSource(Constant.OSM);
         }
     }
 
@@ -368,7 +366,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         }
     };
 
-    private OnTreeNodeClickListener treeNodeListener=new OnTreeNodeClickListener() {
+    private OnTreeNodeClickListener treeNodeListener = new OnTreeNodeClickListener() {
         @Override
         public void onClick(Node node, int position) {
             treeRecyclerAdapter.setItemSelected(position);
@@ -382,9 +380,38 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
 
         @Override
         public void onCheckChange(Node node, int position, List<Node> checkedNodes) {
-            Log.d(TAG, "onCheckChange: nodeId="+node.getId());
+            Log.d(TAG, "onCheckChange: nodeId=" + node.getId());
+            Log.d(TAG, "onCheckChange: position=" + position);
+            BaseGraph baseGraph = (BaseGraph) node.bean;
+            if (baseGraph != null) {
+                switch (baseGraph.getType()) {
+                    case Constant.POLYGON:
+                        if (!node.isChecked()){
+                            polygons.getItems().get(baseGraph.getId()).setEnabled(false);
+                        }else{
+                            polygons.getItems().get(baseGraph.getId()).setEnabled(true);
+                        }
+                        break;
+                    case Constant.POLYLINE:
+                        if (!node.isChecked()){
+                            polylines.getItems().get(baseGraph.getId()).setEnabled(false);
+                        }else{
+                            polylines.getItems().get(baseGraph.getId()).setEnabled(true);
+                        }
+                        break;
+                    case Constant.POI:
+                        if (!node.isChecked()){
+                            markers.getItems().get(baseGraph.getId()).setEnabled(false);
+                        }else{
+                            markers.getItems().get(baseGraph.getId()).setEnabled(true);
+                        }
+                        break;
+                }
+            }
+            mapView.invalidate();
         }
     };
+
     /**
      * 点击地图操作
      */
@@ -435,6 +462,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     @Override
     protected void onStart() {
         super.onStart();
+        Log.d(TAG, "onStart: ");
 //        postUrl("login");
     }
 
@@ -464,12 +492,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     @Override
     protected void onRestart() {
         super.onRestart();
+        Log.d(TAG, "onRestart: ");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-
+        Log.d(TAG, "onResume: ");
         isBackground = false;
         if (isOnline) {
             int zoomLevel = dataKeeper.getInt(PREFS_ZOOM_LEVEL_DOUBLE, dataKeeper.getInt(PREFS_ZOOM_LEVEL, 10));
@@ -481,7 +510,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
             myLocationOverlay.enableCompass();
         }
         mScaleBarOverlay.enableScaleBar();
-        Log.d(TAG, "onResume: " + mapView.getTileProvider());
         //判断程序是否第一次启动
         if (isFirstStart()) {
             mapView.getController().setCenter(new GeoPoint(30.5702183724, 104.0647735044));
@@ -495,13 +523,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
             final double longitude = Double.valueOf(longitudeString);
             mapView.getController().animateTo(new GeoPoint(latitude, longitude));
         }
-        if (!isRecording) {
-            myLocationOverlay.enableFollowLocation();
-        }
     }
 
     @Override
     protected void onPause() {
+        Log.d(TAG, "onPause: ");
         isBackground = true;
         dataKeeper.put("first_start", false);
         if (isOnline) {
@@ -514,25 +540,28 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         myLocationOverlay.disableMyLocation();
         myLocationOverlay.disableCompass();
         mScaleBarOverlay.disableScaleBar();
-        if (isRecording) {
-            myLocationOverlay.disableFollowLocation();
-        }
         super.onPause();
-        if (poiMarkers != null) {
-            poiMarkers.closeAllInfoWindows();
-        }
+//        if (poiMarkers != null) {
+//            poiMarkers.closeAllInfoWindows();
+//        }
     }
 
 
     @Override
     protected void onDestroy() {
 //        postUrl("logout");
-        if (!isRecording) {
+        Log.d(TAG, "onDestroy: ");
+        if (isRecording) {
             unregisterReceiver(myReceiver);
             myReceiver = null;
         }
+        locationList.clear();
         baseGraphs.clear();
         baseGraphs = null;
+        if (markers!=null){
+            markers.closeAllInfoWindows();
+            mapView.getOverlays().remove(markers);
+        }
         if (polylines != null) {
             polylines.closeAllInfoWindows();
             mapView.getOverlays().remove(polylines);
@@ -547,6 +576,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                 mapView.getOverlays().remove(overlay);
             }
         }
+        gps.clearLocationSources();
+        mapView.onDetach();
         super.onDestroy();
     }
 
@@ -571,6 +602,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
             case REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS:
+                Log.d(TAG, "onRequestPermissionsResult: do nothing");
                 if (PermissionUtils.checkLocationPermission(this)) {
                     myLocationOverlay.runOnFirstFix(new Runnable() {
                         @Override
@@ -600,11 +632,16 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         Marker marker = new Marker(mapView);
         marker.setPosition(point);
         marker.setIcon(icon);
-        marker.setTitle("坐标：纬度=" + point.getLatitude() + ",\n\n经度=" + point.getLongitude());
+        marker.setTitle("纬度=" + point.getLatitude() + ",\n\n经度=" + point.getLongitude());
         marker.setFlat(true);//设置marker平贴地图效果
-        mapView.getOverlays().removeAll(markers);
-        markers.add(marker);
-        mapView.getOverlays().addAll(markers);
+        if (drawType.equals(Constant.POI)){
+            markers.add(marker);
+        }else{
+            tempMarkers.add(marker);
+        }
+//        mapView.getOverlays().removeAll(markers);
+//        markers.add(marker);
+//        mapView.getOverlays().addAll(markers);
         mapView.invalidate();
     }
 
@@ -730,28 +767,15 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                 break;
             case R.id.main_tab_edit://绘制轨迹
                 isEditMode = true;
-//                if (!isRecording) {
-//
-//                }
                 editTopTool.setVisibility(View.VISIBLE);
                 prickLayout.setVisibility(View.VISIBLE);
                 editBottomTool.setVisibility(View.VISIBLE);
                 trackRecord.setVisibility(View.GONE);
-                searchCardView.setVisibility(View.GONE);
+                searchBox.setVisibility(View.GONE);
                 navMainBottom.setVisibility(View.GONE);
                 myLocationOverlay.disableCompass();
 
-                markers = new ArrayList<>();
-                polygons = new FolderOverlay();
-//        polygons = new ArrayList<>();
-                mapView.getOverlays().add(polygons);
-                polylines = new FolderOverlay();
-//        polylines = new ArrayList<>();
-                mapView.getOverlays().add(polylines);
-
-                Polyline startLine = new Polyline();
-                startLine.setWidth(5);
-                editLine = startLine;
+//                markers = new ArrayList<>();
                 break;
             case R.id.main_tab_map://在线地图
                 isOnline = true;
@@ -788,45 +812,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
 //                tabMap.setSelected(false);
 //                break;
             case R.id.btn_track_record://记录轨迹
-                if (isRecording) {
-                    isRecording = false;
-                    locationList.clear();
-                    trackRecord.setText(R.string.track_stop);
-                    trackRecord.setTextColor(Color.RED);
-                    toastUtils.showToast("开始记录轨迹");
-                    startBackground();
-                    if (gpsLine == null) {
-                        gpsLine = new Polyline();
-                        gpsLine.setWidth(5);
-                        gpsLine.setColor(Color.RED);
-                        mapView.getOverlays().add(gpsLine);
-                    }
-                    myLocationOverlay.enableFollowLocation();
-                } else {
-                    isRecording = true;
-                    trackRecord.setText(R.string.track_start);
-                    trackRecord.setTextColor(Color.WHITE);
-                    stopBackground();
-                    if (locationList.size() > 2) {
-                        toastUtils.showToast("停止记录轨迹");
-                        saveType = 11;
-                        askSaveDialog(name, 0);
-                        BaseGraph baseGraph = new BaseGraph();
-                        baseGraph.setId(baseGraphs.size());
-                        baseGraph.setType(drawType);
-                        baseGraph.setName("轨迹#" + baseGraphs.size());
-                        baseGraph.getGeoPoints().addAll(locationList);
-                        baseGraphs.add(baseGraph);
-
-                        Node node = new Node<>(baseGraphs.size() + 1, root.getId(), baseGraph.getName(), baseGraph);
-                        node.setChecked(true);
-                        mData.add(node);
-                        treeRecyclerAdapter.addDataAll(mData, 1);
-                    } else {
-                        toastUtils.showToast("此次轨迹路线太短，不作记录");
-                    }
-                    myLocationOverlay.disableFollowLocation();
-                }
+                recordingTrack();
                 break;
             case R.id.rl_center_prick:
                 if (TextUtils.isEmpty(drawType)) {
@@ -842,28 +828,38 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                 if (points.size() > 0) {
                     points.remove(points.size() - 1);
                     drawTrack(points);
-                    mapView.getOverlays().removeAll(markers);
-                    markers.remove(markers.size() - 1);
-                    mapView.getOverlays().addAll(markers);
+                    if (drawType.equals(Constant.POI)){
+                        markers.getItems().remove(markers.getItems().size()-1);
+                    }else {
+                        tempMarkers.getItems().remove(tempMarkers.getItems().size()-1);
+                    }
+//                    mapView.getOverlays().removeAll(markers);
+//                    markers.remove(markers.size() - 1);
+//                    mapView.getOverlays().addAll(markers);
                     mapView.invalidate();
                 }
                 break;
             case R.id.btn_edit_empty://清空界面
                 points.clear();
-                markers.clear();
+//                markers.clear();
                 for (Overlay overlay : mapView.getOverlays()) {
                     if (overlay instanceof OverlayWithIW) {
+                        ((OverlayWithIW) overlay).onDestroy();
                         mapView.getOverlays().remove(overlay);
                     }
                     if (overlay instanceof FolderOverlay) {
+                        ((FolderOverlay) overlay).closeAllInfoWindows();
                         mapView.getOverlays().remove(overlay);
                     }
                 }
-                polygons = new FolderOverlay();
-                mapView.getOverlays().add(polygons);
-                polylines = new FolderOverlay();
-                mapView.getOverlays().add(polylines);
+                tempMarkers=null;
+                markers=null;
+                polylines=null;
+                polygons=null;
                 mapView.invalidate();
+                resetEditStatus();
+                initEditData();
+
                 mData.clear();
                 mData.add(root);
                 treeRecyclerAdapter.addDataAll(mData, 0);
@@ -871,6 +867,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
             case R.id.btn_edit_finish://完成本次绘制
                 saveLine(points);
                 points.clear();
+                resetEditStatus();
                 break;
             case R.id.btn_edit_close://关闭轨迹绘制
                 if (points.size() > 0) {
@@ -879,10 +876,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                     isEditMode = false;
                     editLine = null;
                     editPolygon = null;
-                    drawType = "";
-                    polygonMode.setSelected(false);
-                    lineMode.setSelected(false);
-                    poiMode.setSelected(false);
+                    resetEditStatus();
                     if (isOffline) {
                         editTopTool.setVisibility(View.GONE);
                         prickLayout.setVisibility(View.GONE);
@@ -897,7 +891,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                     prickLayout.setVisibility(View.GONE);
                     editBottomTool.setVisibility(View.GONE);
                     trackRecord.setVisibility(View.VISIBLE);
-                    searchCardView.setVisibility(View.VISIBLE);
+                    searchBox.setVisibility(View.VISIBLE);
                     navMainBottom.setVisibility(View.VISIBLE);
                 }
                 break;
@@ -906,7 +900,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                 break;
             case R.id.btn_edit_delete://删除
                 if (selectedPosition > 0) {
-                    AlertDialog.Builder builder = DialogUtils.dialogBuilder(this, "请确认需要删除该条数据？", null);
+                    builder = new AlertDialog.Builder(this);
+                    builder.setTitle("需要删除该条数据吗？");
                     builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
@@ -940,7 +935,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                     saveType = 12;
                     askSaveDialog(name, 0);
                 } else {
-                    toastUtils.showSingletonToast("没有绘制数据或结束绘制，无法保存");
+                    toastUtils.showSingletonToast("当前没有绘制数据或结束绘制，无法保存");
                 }
                 break;
             case R.id.btn_edit_shape://图形
@@ -956,6 +951,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                     polygon.setStrokeWidth(5);
                     polygon.setFillColor(Color.GRAY);
                     editPolygon = polygon;
+                    polygons.add(editPolygon);
                 }
                 break;
             case R.id.btn_edit_line://线
@@ -967,9 +963,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                     poiMode.setSelected(false);
                     drawType = Constant.POLYLINE;
 
-                    Polyline polyline = new Polyline();
+                    MyPolyline polyline = new MyPolyline();
                     polyline.setWidth(5);
                     editLine = polyline;
+                    polylines.add(editLine);
                 }
                 break;
             case R.id.btn_edit_poi://点
@@ -986,10 +983,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                 searchText.setText("");
                 break;
             case R.id.search_editText://输入时
+                searchBox.setSelected(true);
                 searchText.setFocusable(true);
                 searchText.setFocusableInTouchMode(true);
                 searchText.setCursorVisible(true);
-                searchCardView.setCardBackgroundColor(Color.WHITE);
                 break;
             case R.id.tv_map_type_normal://点击地图类型
                 normalMap.setSelected(true);
@@ -1023,11 +1020,110 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         }
     }
 
+
+    /**
+     * 重置绘制初始状态
+     */
+    private void resetEditStatus() {
+        drawType = "";
+        polygonMode.setSelected(false);
+        lineMode.setSelected(false);
+        poiMode.setSelected(false);
+    }
+
+    /**
+     * 初始化绘制数据
+     */
+    private void initEditData() {
+        if (tempMarkers==null){
+            tempMarkers=new FolderOverlay();
+            mapView.getOverlays().add(tempMarkers);
+        }
+        if (markers==null){
+            markers=new FolderOverlay();
+            mapView.getOverlays().add(markers);
+        }
+        if (polygons==null){
+            polygons = new FolderOverlay();
+            mapView.getOverlays().add(polygons);
+        }
+        if (polylines==null){
+            polylines = new FolderOverlay();
+            mapView.getOverlays().add(polylines);
+        }
+    }
+
+    /**
+     * 记录轨迹
+     */
+    private void recordingTrack() {
+        if (!isRecording) {
+            isRecording = true;
+            trackRecord.setText(R.string.track_stop);
+            trackRecord.setTextColor(Color.RED);
+            toastUtils.showToast("开始记录轨迹");
+            if (gpsLine != null) {
+                builder = new AlertDialog.Builder(this);
+                builder.setTitle("需要继续上一次的记录吗？");
+                builder.setCancelable(false);
+                builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        startBackground();
+                        dialog.dismiss();
+                    }
+                });
+                builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        locationList.clear();
+                        gpsLine = new MyPolyline();
+                        gpsLine.setWidth(5);
+                        gpsLine.setColor(Color.RED);
+                        mapView.getOverlays().add(gpsLine);
+                        startBackground();
+                        dialog.dismiss();
+                    }
+                });
+                builder.create().show();
+            } else {
+                startBackground();
+                gpsLine = new MyPolyline();
+                gpsLine.setWidth(5);
+                gpsLine.setColor(Color.RED);
+                mapView.getOverlays().add(gpsLine);
+            }
+        } else {
+            isRecording = false;
+            trackRecord.setText(R.string.track_start);
+            trackRecord.setTextColor(Color.WHITE);
+            stopBackground();
+            if (locationList.size() > 2) {
+                toastUtils.showToast("停止记录轨迹");
+                saveType = 11;
+                askSaveDialog("轨迹#" + baseGraphs.size(), 0);
+                BaseGraph baseGraph = new BaseGraph();
+                baseGraph.setId(baseGraphs.size());
+                baseGraph.setType(Constant.POLYLINE);
+                baseGraph.setName("轨迹#" + baseGraphs.size());
+                baseGraph.getGeoPoints().addAll(locationList);
+                baseGraphs.add(baseGraph);
+
+                Node node = new Node<>(baseGraphs.size() + 1, root.getId(), baseGraph.getName(), baseGraph);
+                node.setChecked(true);
+                mData.add(node);
+                treeRecyclerAdapter.addDataAll(mData, 1);
+            } else {
+                toastUtils.showToast("此次轨迹路线太短，不作记录");
+            }
+        }
+    }
+
     /*
     停止后台
      */
     private void stopBackground() {
-        stopService(new Intent(this, MyLocationService.class));
+        stopService(new Intent(this, LocationService.class));
         unregisterReceiver(myReceiver);
     }
 
@@ -1035,7 +1131,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     开启后台
      */
     private void startBackground() {
-        startService(new Intent(this, MyLocationService.class));
+        startService(new Intent(this, LocationService.class));
         // 注册广播
         myReceiver = new MyReceiver();
         IntentFilter filter = new IntentFilter();
@@ -1105,25 +1201,25 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                     if (name.length() == 0) {
                         continue;
                     }
-                    if (ArchiveFileFactory.isFileExtensionRegistered(name)) {
+                    if (name.equalsIgnoreCase("bmdb")) {
                         try {
 
                             //ok found a file we support and have a driver for the format, for this demo, we'll just use the first one
-
                             //create the offline tile provider, it will only do offline file archives
                             //again using the first file
                             MBTileProvider provider = new MBTileProvider(new SimpleRegisterReceiver(this), list[i]);
                             //tell osmdroid to use that provider instead of the default rig which is (asserts, cache, files/archives, online
                             mapView.setTileProvider(provider);
                             Log.d(TAG, "mapViewOtherData: " + provider.getMaximumZoomLevel());
-                            String source = "";
                             this.mapView.setTileSource(provider.getTileSource());
-                            toastUtils.showToast("Using " + list[i].getAbsolutePath() + " " + source);
+                            toastUtils.showToast("Using " + list[i].getAbsolutePath());
                             this.mapView.invalidate();
                             return;
                         } catch (Exception ex) {
                             ex.printStackTrace();
                         }
+                    }else{
+                        toastUtils.showSingletonToast("请使用BIGEMAP瓦片库格式！");
                     }
                 }
             }
@@ -1136,7 +1232,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     切换离线模式
      */
     private void hideAll() {
-        searchCardView.setVisibility(View.GONE);
+        searchBox.setVisibility(View.GONE);
         trackRecord.setVisibility(View.GONE);
     }
 
@@ -1144,7 +1240,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     切换地图模式
      */
     private void showAll() {
-        searchCardView.setVisibility(View.VISIBLE);
+        searchBox.setVisibility(View.VISIBLE);
         trackRecord.setVisibility(View.VISIBLE);
     }
 
@@ -1159,6 +1255,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
             if (saveType == 12) {
                 writeKml.createKml(name, baseGraphs);//绘制轨迹保存
             } else if (saveType == 11) {
+                Log.d(TAG, "saveTrackSD: listSize=" + locationList.size());
                 writeKml.createKml(name, locationList, Constant.POLYLINE);//轨迹记录保存
             }
         } catch (Exception e) {
@@ -1174,10 +1271,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_view_track_edit, null);
         final EditText nameEt = (EditText) view.findViewById(R.id.et_track_edit_name);
         nameEt.setText(name);
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder = new AlertDialog.Builder(this);
         builder.setView(view);
+        builder.setTitle(R.string.dialog_track_edit);
         if (type == 0) {
-            builder.setTitle(R.string.dialog_track_edit);
             builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
@@ -1186,7 +1283,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                 }
             });
         } else if (type == 1) {
-            builder.setTitle(R.string.dialog_track_edit);
             builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
@@ -1217,54 +1313,60 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         if (drawType.equals(Constant.POLYLINE)) {
             if (geoPoints.size() > 1) {
                 isFinished = true;
+                tempMarkers.getItems().clear();
+                mapView.invalidate();
                 BaseGraph baseGraph = new BaseGraph();
-                baseGraph.setId(baseGraphs.size());
+                baseGraph.setId(polylines.getItems().size()-1);
                 baseGraph.setType(drawType);
-                baseGraph.setName("Line#" + baseGraphs.size());
+                baseGraph.setName("Line#" + polylines.getItems().size());
                 baseGraph.getGeoPoints().addAll(PositionUtils.gcjToGps(geoPoints));
                 baseGraphs.add(baseGraph);
 
-                Polyline polyline = new Polyline();
-                polyline.setWidth(5);
-                editLine = polyline;
+//                MyPolyline polyline = new MyPolyline();
+//                polyline.setWidth(5);
+//                editLine = polyline;
+//                polylines.add(editLine);
 
                 Node node = new Node<>(baseGraphs.size() + 1, pid, baseGraph.getName(), baseGraph);
                 node.setChecked(true);
                 mData.add(node);
             } else {
                 isFinished = false;
-                toastUtils.showSingletonToast("当前绘制轨迹点数过少不能记录该条数据");
+                toastUtils.showSingletonToast("当前绘制点数过少不能记录该条数据");
             }
         } else if (drawType.equals(Constant.POLYGON)) {
             if (geoPoints.size() > 2) {
                 isFinished = true;
+                tempMarkers.getItems().clear();
+                mapView.invalidate();
                 BaseGraph baseGraph = new BaseGraph();
-                baseGraph.setId(baseGraphs.size());
+                baseGraph.setId(polygons.getItems().size()-1);
                 baseGraph.setType(drawType);
-                baseGraph.setName("Polygon#" + baseGraphs.size());
+                baseGraph.setName("Polygon#" + polygons.getItems().size());
                 baseGraph.getGeoPoints().addAll(PositionUtils.gcjToGps(geoPoints));
                 baseGraphs.add(baseGraph);
 
-                Polygon polygon = new Polygon();
-                polygon.setStrokeWidth(5);
-                polygon.setFillColor(Color.GRAY);
-                editPolygon = polygon;
+//                Polygon polygon = new Polygon();
+//                polygon.setStrokeWidth(5);
+//                polygon.setFillColor(Color.GRAY);
+//                editPolygon = polygon;
+//                polygons.add(editPolygon);
 
                 Node node = new Node<>(baseGraphs.size() + 1, pid, baseGraph.getName(), baseGraph);
                 node.setChecked(true);
                 mData.add(node);
             } else {
                 isFinished = false;
-                toastUtils.showSingletonToast("当前绘制轨迹点数过少不能记录该条数据");
+                toastUtils.showSingletonToast("当前绘制点数过少不能记录该条数据");
             }
         } else if (drawType.equals(Constant.POI)) {
-            if (geoPoints.size()>0){
-                isFinished=true;
+            if (geoPoints.size() > 0) {
+                isFinished = true;
                 for (GeoPoint geoPoint : geoPoints) {
                     BaseGraph baseGraph = new BaseGraph();
-                    baseGraph.setId(baseGraphs.size());
+                    baseGraph.setId(markers.getItems().size()-1);
                     baseGraph.setType(drawType);
-                    baseGraph.setName("Point#" + baseGraphs.size());
+                    baseGraph.setName("Point#" + markers.getItems().size());
                     baseGraph.getGeoPoints().add(PositionUtils.gcj_To_Gps84(geoPoint));
                     baseGraphs.add(baseGraph);
 
@@ -1272,6 +1374,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                     node.setChecked(true);
                     mData.add(node);
                 }
+            }else {
+                isFinished = false;
+                toastUtils.showSingletonToast("当前绘制点数过少不能记录该条数据");
             }
 
         }
@@ -1284,7 +1389,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     private void drawTrack(List<GeoPoint> geoPoints) {
         switch (drawType) {
             case Constant.POLYGON:
-                polygons.add(editPolygon);
                 editPolygon.setPoints(points);
                 if (geoPoints.size() > 2) {
                     double area = MapMeasureUtils.calculateArea(geoPoints);
@@ -1301,7 +1405,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                 }
                 break;
             case Constant.POLYLINE:
-                polylines.add(editLine);
                 editLine.setPoints(geoPoints);
                 break;
             default:
@@ -1408,7 +1511,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
             mapSourceList.setLayoutManager(new LinearLayoutManager(this));
             List<OfflineMap> offlineMaps = DataSupport.findAll(OfflineMap.class);
             if (offlineMaps.size() > 0) {
-                int selectedSource = dataKeeper.getInt(Constant.PREFS_OFFLINE_MAP_SOURCE, -1);
+                final int selectedSource = dataKeeper.getInt(Constant.PREFS_OFFLINE_MAP_SOURCE, -1);
                 final OfflineMapSourceAdapter adapter = new OfflineMapSourceAdapter(this);
                 adapter.setData(offlineMaps);
                 mapSourceList.setAdapter(adapter);
@@ -1417,6 +1520,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                     @Override
                     public void onClick(View v, int pos, Object data) {
                         OfflineMap offlineMap = (OfflineMap) data;
+                        if (selectedSource==pos){
+                            return;
+                        }
                         adapter.setItemSelected(pos);
                         dataKeeper.putInt(Constant.PREFS_OFFLINE_MAP_SOURCE, pos);
                         dataKeeper.put(Constant.PREFS_OFFLINE_ELE_PATH, offlineMap.getElePath());
@@ -1433,8 +1539,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
      * 隐藏键盘
      */
     private void hideKeyboard() {
+        searchBox.setSelected(false);
         searchText.setCursorVisible(false);
-        searchCardView.setCardBackgroundColor(ContextCompat.getColor(this, R.color.translucent_white_55));
         InputMethodManager inputMethodManager = (InputMethodManager) this
                 .getSystemService(Context.INPUT_METHOD_SERVICE);
         inputMethodManager.hideSoftInputFromWindow(searchText.getWindowToken(), 0);
@@ -1461,31 +1567,29 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     // 获取广播数据
     private class MyReceiver extends BroadcastReceiver {
 
-        @SuppressWarnings("unchecked")
         @Override
         public void onReceive(Context context, Intent intent) {
-            Bundle bundle = intent.getExtras();
-            List<Location> tempList= bundle.getParcelableArrayList("saveGps");
-            ArrayList<GeoPoint> convertedList = PositionUtils.wgsToGcj(tempList);
-            if (tempList.size() > 1) {
+            GeoPoint geoPoint = intent.getParcelableExtra("location");
+            locationList.add(geoPoint);
+//            ArrayList<GeoPoint> compressList= new DouglasUtil(locationList, 10).compress();
+            ArrayList<GeoPoint> convertedList = PositionUtils.wgsToGcj(locationList);
+            if (locationList.size() > 1) {
                 gpsLine.setPoints(convertedList);
-                for (Location location: tempList){
-                    locationList.add(new GeoPoint(location));
-                }
             }
+            mapView.getController().animateTo(PositionUtils.gps84_To_Gcj02(geoPoint));
         }
+
     }
 
     // 显示缺失权限提示
     private void showMissingPermissionDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        final AlertDialog alertDialog = builder.create();
+        builder = new AlertDialog.Builder(this);
         builder.setMessage("当前应用缺少必要权限。\n\n请进入\"位置信息\"选择\"高精确度\"。\n\n最后点击两次后退按钮，即可返回。");
         // 拒绝, 退出应用
-        builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+        builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                alertDialog.dismiss();
+                dialog.dismiss();
             }
         });
         builder.setPositiveButton("设置", new DialogInterface.OnClickListener() {
@@ -1494,7 +1598,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                 startAppSettings();
             }
         });
-        builder.show();
+        builder.create().show();
     }
 
     // 启动应用的设置
@@ -1516,12 +1620,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                 readKml.parseKml(filePath);
                 List<BaseGraph> graphs = readKml.getBaseGraphs();
                 for (BaseGraph baseGraph : graphs) {
+                    baseGraphs.add(baseGraph);
+                    Node node = new Node<>(baseGraphs.size() + 1, root.getId(), baseGraph.getName(), baseGraph);
+                    node.setChecked(true);
+                    mData.add(node);
                     switch (baseGraph.getType()) {
                         case Constant.POI:
-                            poiMarkers = new FolderOverlay();
-                            mapView.getOverlays().add(poiMarkers);
                             addPoi(baseGraph);
-                            Log.d(TAG, "onActivityResult: poiMarkers=" + poiMarkers.getItems().size());
                             break;
                         case Constant.POLYGON:
                             addPolygon(baseGraph);
@@ -1533,6 +1638,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
                             break;
                     }
                 }
+                treeRecyclerAdapter.addDataAll(mData, 1);
                 List<GeoPoint> gcjPoints = PositionUtils.wgsToGcj02(readKml.getGeoPoints());
                 final BoundingBox boundingBox = BoundingBox.fromGeoPoints(gcjPoints);
                 mapView.zoomToBoundingBox(boundingBox, true);
@@ -1550,10 +1656,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
             Marker marker = new Marker(mapView);
             marker.setPosition(PositionUtils.gps84_To_Gcj02(geoPoint));
             marker.setTitle(baseGraph.getName());
-            marker.setSnippet("经度="+geoPoint.getLongitude()+",\n\n纬度="+geoPoint.getLatitude());
-            marker.setAnchor(Marker.ANCHOR_CENTER,Marker.ANCHOR_BOTTOM);
+            marker.setSnippet("经度=" + geoPoint.getLongitude() + ",\n\n纬度=" + geoPoint.getLatitude());
+            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
             marker.setInfoWindowAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-            poiMarkers.add(marker);
+            markers.add(marker);
         }
     }
 
@@ -1561,10 +1667,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
     添加线
      */
     private void addLine(BaseGraph baseGraph) {
-        Polyline polyline = new Polyline();
+        MyPolyline polyline = new MyPolyline();
         polyline.setWidth(5);
+        polyline.setColor(Color.RED);
         polyline.setPoints(PositionUtils.wgsToGcj02(baseGraph.getGeoPoints()));
-        mapView.getOverlays().add(polyline);
+        polylines.add(polyline);
+//        mapView.getOverlays().add(polyline);
     }
 
     /*
@@ -1575,7 +1683,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener,
         polygon.setStrokeWidth(5);
         polygon.setFillColor(Color.GRAY);
         polygon.setPoints(PositionUtils.wgsToGcj02(baseGraph.getGeoPoints()));
-        mapView.getOverlays().add(polygon);
+        polygons.add(polygon);
+//        mapView.getOverlays().add(polygon);
     }
 
     @Override

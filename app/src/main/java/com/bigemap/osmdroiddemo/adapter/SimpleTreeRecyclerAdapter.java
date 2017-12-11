@@ -55,7 +55,7 @@ public class SimpleTreeRecyclerAdapter extends TreeRecyclerAdapter {
                 setChecked(node, viewHolder.cb.isChecked());
                 List<Node> checkedNodes = new ArrayList<Node>();
                 for(Node n:mAllNodes){
-                    if(n.isChecked()){
+                    if(n.isLeaf() && n.isChecked()){
                         checkedNodes.add(n);
                     }
                 }

@@ -6,6 +6,8 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -24,7 +26,6 @@ import java.util.ArrayList;
 
 public class OfflineMapChooseActivity extends BaseActivity implements View.OnClickListener {
     private static final String TAG = "OfflineMapChooseActivit";
-
     @Bind(R.id.et_offline_map_name)
     private EditText offlineMapName;
     @Bind(R.id.et_offline_map_description)
@@ -40,18 +41,18 @@ public class OfflineMapChooseActivity extends BaseActivity implements View.OnCli
     //    private File selectFile=null;
     private AlertDialog dialog = null;
     private int selectType; //0:电子，1:卫星
+    private String name;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
-        setTitle("编辑轨迹");
+        setTitle("导入离线地图");
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
         setContentView(R.layout.activity_offline_map_choose);
         init();
-
     }
 
     /*
@@ -141,23 +142,6 @@ public class OfflineMapChooseActivity extends BaseActivity implements View.OnCli
         }
     }
 
-    private void saveData() {
-        String name = offlineMapName.getText().toString().trim();
-        String description = offlineMapDesc.getText().toString().trim();
-        String elePath = offlineMapPath.getText().toString().trim();
-        String satelPath = offlineSatellitePath.getText().toString().trim();
-        OfflineMap offlineMap = new OfflineMap();
-        offlineMap.setName(name);
-        offlineMap.setDescription(description);
-        offlineMap.setElePath(elePath);
-        offlineMap.setSatelPath(satelPath);
-
-        boolean success = offlineMap.save();
-        if (success) {
-            toastUtils.showSingletonToast("success");
-        }
-    }
-
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
@@ -172,7 +156,25 @@ public class OfflineMapChooseActivity extends BaseActivity implements View.OnCli
             case R.id.tv_offline_map_save:
                 offlineMapName.setCursorVisible(false);
                 offlineMapDesc.setCursorVisible(false);
-                saveData();
+                name = offlineMapName.getText().toString().trim();
+                Log.d(TAG, "saveData: name="+name);
+                if (TextUtils.isEmpty(name)){
+                    toastUtils.showSingletonToast("没有选择地图，无法保存");
+                    break;
+                }
+                String description = offlineMapDesc.getText().toString().trim();
+                String elePath = offlineMapPath.getText().toString().trim();
+                String satelPath = offlineSatellitePath.getText().toString().trim();
+                OfflineMap offlineMap = new OfflineMap();
+                offlineMap.setName(name);
+                offlineMap.setDescription(description);
+                offlineMap.setElePath(elePath);
+                offlineMap.setSatelPath(satelPath);
+
+                boolean success = offlineMap.save();
+                if (success) {
+                    toastUtils.showSingletonToast("success");
+                }
                 finish();
                 break;
         }

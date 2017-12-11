@@ -15,6 +15,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
+import android.support.v7.app.AppCompatDelegate;
 import android.util.Log;
 import android.view.Display;
 import android.view.Menu;
@@ -51,7 +52,11 @@ import java.util.LinkedList;
 
 public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
         IOverlayMenuProvider, Overlay.Snappable, IOrientationConsumer {
+    private static final String TAG = "MyLocationOverlay";
 
+    static {
+        AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
+    }
     private Paint mCirclePaint = new Paint();
 
     private final float mScale;
@@ -167,6 +172,7 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
 
     @Override
     public void onDetach(MapView mapView) {
+        Log.d(TAG, "onDetach: ");
         this.disableMyLocation();
         /*if (mPersonBitmap != null) {
             mPersonBitmap.recycle();
@@ -262,10 +268,10 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
 
         canvas.save();
         // Rotate the icon if we have a GPS fix, take into account if the map is already rotated
-//        float mapRotation = lastFix.getBearing();
-//        if (mapRotation >= 360.0f)
-//            mapRotation = mapRotation - 360f;
-//        canvas.rotate(mapRotation, mMapCoordsTranslated.x, mMapCoordsTranslated.y);
+        float mapRotation = lastFix.getBearing();
+        if (mapRotation >= 360.0f)
+            mapRotation = mapRotation - 360f;
+        canvas.rotate(mapRotation, mMapCoordsTranslated.x, mMapCoordsTranslated.y);
         // Counteract any scaling that may be happening so the icon stays the same size
         canvas.scale(1 / scaleX, 1 / scaleY, mMapCoordsTranslated.x, mMapCoordsTranslated.y);
         // Draw the bitmap
@@ -513,9 +519,8 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
     protected void setLocation(Location location) {
         // If we had a previous location, let's get those bounds
 
-        Location oldLocation = null;
-        if (mLocation != null) {
-            oldLocation = convertLocation(mLocation);
+        Location oldLocation = mLocation;
+        if (oldLocation != null) {
             this.getMyLocationDrawingBounds(mMapView.getZoomLevel(), oldLocation,
                     mMyLocationPreviousRect);
         }
@@ -625,6 +630,7 @@ public class MyLocationOverlay extends Overlay implements IMyLocationConsumer,
 
         boolean success = mOrientationProvider.startOrientationProvider(this);
         mIsCompassEnabled = success;
+        Log.d(TAG, "enableCompass: isCompass="+success);
 
         // Update the screen to see changes take effect
         if (mMapView != null) {
